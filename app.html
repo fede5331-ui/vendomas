@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>VendoMas</title>
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ================================================
+       BARRA SUPERIOR (TOPBAR)
+       ================================================ -->
+  <div class="topbar">
+    <i class="icono-menu" aria-label="Menú">☰</i>
+    <span class="topbar-titulo" id="topbar-titulo">VendoMas</span>
+    <span style="width:28px"></span>
+  </div>
+
+  <!-- ================================================
+       PANTALLA: VENTA
+       ================================================ -->
+  <div class="pantalla" id="pantalla-venta">
+
+    <div class="zona-escaneo" id="zona-escaneo">
+      <button class="btn-escanear-grande" onclick="pruebaScanner()">
+        <svg class="btn-escanear-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 8V5a1 1 0 0 1 1-1h3" />
+          <path d="M16 4h3a1 1 0 0 1 1 1v3" />
+          <path d="M20 16v3a1 1 0 0 1-1 1h-3" />
+          <path d="M8 20H5a1 1 0 0 1-1-1v-3" />
+          <line x1="8" y1="8" x2="8" y2="16" stroke-width="1.8" />
+          <line x1="11" y1="8" x2="11" y2="16" stroke-width="1" />
+          <line x1="14" y1="8" x2="14" y2="16" stroke-width="2.2" />
+          <line x1="16.5" y1="8" x2="16.5" y2="16" stroke-width="1" />
+        </svg>
+        <span class="btn-escanear-texto">Escanear</span>
+      </button>
+      <button class="btn-buscar-nombre" onclick="abrirBusqueda()">    
+        Buscar por Nombre
+      </button>
+    </div>
+
+    <div class="carrito-contenedor" id="carrito-contenedor">
+      <div class="carrito-encabezado">
+        <span class="carrito-contador" id="carrito-contador">0 productos</span>
+        <span class="carrito-cancelar" onclick="cancelarVenta()">Cancelar venta</span>
+      </div>
+      <div class="carrito-lista" id="carrito-lista"></div>
+      <div class="barra-cobro">
+        <div class="fila-total">
+          <span class="total-label">Total</span>
+          <span class="total-monto" id="total-monto">$0</span>
+        </div>
+        <button class="btn-cobrar" onclick="cobrarVenta()">Cobrar</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================================================
+       PANTALLA: STOCK
+       ================================================ -->
+  <div class="pantalla" id="pantalla-stock">
+    <p class="titulo-pantalla">Stock</p>
+
+    <div class="pestanas">
+      <div class="pestana activa" id="pestana-stock-todos" onclick="cambiarFiltroStock('todos', this)">Todos</div>
+      <div class="pestana" id="pestana-stock-vencer" onclick="cambiarFiltroStock('vencer', this)">
+        Por vencer <span class="badge-pestana badge-pestana-rojo" id="contador-vencer"></span>
+      </div>
+      <div class="pestana" id="pestana-stock-pocostock" onclick="cambiarFiltroStock('pocostock', this)">
+        Poco stock <span class="badge-pestana badge-pestana-naranja" id="contador-pocostock"></span>
+      </div>
+    </div>
+
+    <div class="barra-busqueda-stock">
+      <input id="buscar-stock" placeholder="🔍 Buscar producto, marca..." oninput="filtrarStock()"/>
+    </div>
+    <div id="lista-stock"></div>
+
+    <button onclick="abrirNuevoProducto()" style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:#185FA5;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;width:100%;margin-top:14px;font-family:Arial,sans-serif">
+
+          <svg xmlns="http://www.w3.org/2000/svg"
+              height="22"
+              width="22"
+              viewBox="0 -960 960 960"
+              fill="white">
+            <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/>
+          </svg>
+
+      <span>Agregar Producto</span>
+
+</button>
+
+    <button onclick="abrirActualizarPrecios()" style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:#fff;border:1.5px solid #185FA5;border-radius:12px;color:#185FA5;font-size:15px;font-weight:600;cursor:pointer;width:100%;margin-top:10px;font-family:Arial,sans-serif">
+      <span>📊</span>
+      <span>Actualizar Precios</span>
+    </button>
+  </div>
+
+  <!-- ================================================
+       PANTALLA: HISTORIAL
+       ================================================ -->
+  <div class="pantalla" id="pantalla-historial">
+    <p class="titulo-pantalla">Historial</p>
+    <div class="pestanas">
+      <div class="pestana activa" onclick="filtrarHistorial('hoy', this)">Hoy</div>
+      <div class="pestana" onclick="filtrarHistorial('semana', this)">Semana</div>
+      <div class="pestana" onclick="filtrarHistorial('mes', this)">Mes</div>
+      <div class="pestana" onclick="filtrarHistorial('todo', this)">Todo</div>
+    </div>
+    <div id="lista-historial"></div>
+  </div>
+
+  <!-- ================================================
+       PANTALLA: RESÚMENES / DASHBOARD
+       ================================================ -->
+  <div class="pantalla activa" id="pantalla-resumenes">
+    <div class="pestanas">
+      <div class="pestana activa" onclick="cargarResumenes('hoy', this)">Hoy</div>
+      <div class="pestana" onclick="cargarResumenes('semana', this)">Semana</div>
+      <div class="pestana" onclick="cargarResumenes('mes', this)">Mes</div>
+      <div class="pestana" onclick="cargarResumenes('todo', this)">Todo</div>
+    </div>
+    <div class="grilla-kpi" id="grilla-kpi"></div>
+    <div id="mas-vendidos"></div>
+    <div id="por-pago"></div>
+  </div>
+
+  <!-- ================================================
+       PANTALLA: CLIENTES
+       ================================================ -->
+  <div class="pantalla" id="pantalla-clientes">
+    <p class="titulo-pantalla">Clientes</p>
+    <div id="lista-clientes"></div>
+    <button class="btn-primario ancho-completo" onclick="abrirNuevoCliente()" style="margin-top:14px">
+      + Nuevo Cliente
+    </button>
+  </div>
+
+  <!-- ================================================
+       PANTALLA: FIADO
+       ================================================ -->
+  <div class="pantalla" id="pantalla-fiado">
+    <p class="titulo-pantalla">Fiado</p>
+    <div id="lista-fiado"></div>
+  </div>
+
+  <!-- ================================================
+       PANTALLA: AJUSTES
+       ================================================ -->
+  <div class="pantalla" id="pantalla-ajustes">
+  <p class="titulo-pantalla">Ajustes</p>
+
+  <div class="grupo-ajuste">
+    <label class="etiqueta-ajuste">Nombre del Negocio</label>
+    <input class="input-ajuste" id="input-nombre-negocio"
+           placeholder="Ingresá el nombre"
+           oninput="actualizarNombreNegocio(this.value)"/>
+  </div>
+
+  <div class="bloque-licencia">
+    <div class="licencia-fila">
+      <span class="licencia-titulo">¿Necesitás ayuda?</span>
+    </div>
+    <p class="licencia-descripcion">
+      Contactanos por WhatsApp para soporte técnico, activar tu licencia o cualquier consulta.
+    </p>
+    <button class="btn-primario ancho-completo" onclick="contactarSoporte()">
+      📱 Contactar por WhatsApp
+    </button>
+  </div>
+
+</div>
+
+  <!-- ================================================
+       OVERLAY: ACTUALIZAR PRECIOS POR MARCA
+       ================================================ -->
+  <div class="formulario-overlay" id="form-actualizar-precios">
+    <div class="formulario-header">
+      <span class="btn-volver" onclick="cerrarActualizarPrecios()">←</span>
+      <span class="formulario-titulo">Actualizar precios por marca</span>
+    </div>
+    <div class="formulario-cuerpo">
+
+      <label class="etiqueta-campo">Marca</label>
+      <select class="input-campo" id="precio-marca" onchange="actualizarCantidadProductos()">
+        <option value="">— Seleccioná una marca —</option>
+      </select>
+
+      <label class="etiqueta-campo">Tipo de ajuste</label>
+      <div class="grilla-dos-columnas" style="margin-bottom:12px">
+        <div class="btn-tipo-ajuste activo" id="btn-subir" onclick="seleccionarTipoAjuste('subir')">
+          📈 Subir precio
+        </div>
+        <div class="btn-tipo-ajuste" id="btn-bajar" onclick="seleccionarTipoAjuste('bajar')">
+          📉 Bajar precio
+        </div>
+      </div>
+
+      <label class="etiqueta-campo">Porcentaje de ajuste</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <input type="range" min="0.1" max="50" value="5" step="0.1" id="precio-slider"
+          style="flex:1" oninput="syncSlider(this.value)"/>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input class="input-campo" type="number" id="precio-pct" value="5"
+            min="0.1" max="50" step="0.1"
+            style="width:70px;margin-bottom:0;text-align:center"
+            oninput="syncInput(this.value)"/>
+          <span style="font-size:14px;color:var(--texto-secundario)">%</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+        <button class="btn-pct-rapido" onclick="setPct(1)">1%</button>
+        <button class="btn-pct-rapido" onclick="setPct(2.5)">2.5%</button>
+        <button class="btn-pct-rapido" onclick="setPct(5)">5%</button>
+        <button class="btn-pct-rapido" onclick="setPct(10)">10%</button>
+        <button class="btn-pct-rapido" onclick="setPct(15)">15%</button>
+      </div>
+
+      <label class="etiqueta-campo">Aplicar a</label>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--texto)">
+          <input type="checkbox" id="check-venta" checked> Precio de venta
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--texto)">
+          <input type="checkbox" id="check-costo" checked> Precio de costo
+        </label>
+      </div>
+
+      <div class="badge-auto" id="badge-cantidad" style="display:none;background:#d6eaf8;color:#1a5276">
+        Se actualizarán <span id="cant-productos">0</span> productos
+      </div>
+
+      <button class="btn-primario ancho-completo" onclick="aplicarActualizacionPrecios()" style="margin-top:14px">
+        Aplicar actualización
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ================================================
+       BOTTOM NAVIGATION BAR
+       ================================================ -->
+  <div class="bottom-nav">
+    <div class="bottom-nav-item activo" id="bnav-resumenes" onclick="irA('resumenes', this)">
+      <span class="bottom-nav-icono">
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M240-200h120v-240h240v240h120v-360L480-740 240-560v360Zm-80 80v-480l320-240 320 240v480H520v-240h-80v240H160Zm320-350Z"/></svg>
+      </span>
+      <span>Inicio</span>
+    </div>
+
+    <div class="bottom-nav-item" id="bnav-stock" onclick="irA('stock', this)">
+      <span class="bottom-nav-icono">
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M440-183v-274L200-596v274l240 139Zm80 0 240-139v-274L520-457v274Zm-80 92L160-252q-19-11-29.5-29T120-321v-318q0-22 10.5-40t29.5-29l280-161q19-11 40-11t40 11l280 161q19 11 29.5 29t10.5 40v318q0 22-10.5 40T800-252L520-91q-19 11-40 11t-40-11Zm200-528 77-44-237-137-78 45 238 136Zm-160 93 78-45-237-137-78 45 237 137Z"/></svg>
+      </span>
+      <span>Stock</span>
+    </div>
+
+    <div class="bottom-nav-item bottom-nav-vender" id="bnav-venta" onclick="irA('venta', this)">
+      <div class="bottom-nav-vender-circulo">
+        <svg xmlns="http://www.w3.org/2000/svg" height="28px" viewBox="0 -960 960 960" width="28px" fill="#ffffff"><path d="M40-120v-200h80v120h120v80H40Zm680 0v-80h120v-120h80v200H720ZM160-240v-480h80v480h-80Zm120 0v-480h40v480h-40Zm120 0v-480h80v480h-80Zm120 0v-480h120v480H520Zm160 0v-480h40v480h-40Zm80 0v-480h40v480h-40ZM40-640v-200h200v80H120v120H40Zm800 0v-120H720v-80h200v200h-80Z"/></svg>
+      </div>
+      <span>Vender</span>
+    </div>
+
+    <div class="bottom-nav-item" id="bnav-historial" onclick="irA('historial', this)">
+      <span class="bottom-nav-icono">
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h168q13-36 43.5-58t68.5-22q38 0 68.5 22t43.5 58h168q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm80-80h280v-80H280v80Zm0-160h400v-80H280v80Zm0-160h400v-80H280v80Zm200-198q17 0 28.5-11.5T520-820t-11.5-28.5T480-860t-28.5 11.5T440-820t11.5 28.5T480-780ZM200-200v-560 560Z"/></svg>
+      </span>
+      <span>Historial</span>
+    </div>
+
+    <div class="bottom-nav-item" id="bnav-mas" onclick="abrirMenuMas()">
+      <span class="bottom-nav-icono">
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z"/></svg>
+      </span>
+      <span>Más</span>
+    </div>
+  </div>
+
+  <!-- Menú "Más" -->
+  <div class="mas-overlay" id="mas-overlay" onclick="cerrarMenuMas()">
+    <div class="mas-drawer" onclick="event.stopPropagation()">
+      <div class="mas-item" onclick="irA('clientes', null); cerrarMenuMas()">
+        <svg xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor" style="flex-shrink:0"><path d="M40-160v-112q0-34 17.5-62.5T106-378q62-31 126-46.5T362-440q38 0 75.5 4.5T512-422q-22 23-33 52.5T466-310v150H40Zm760 0v-116q0-34-17.5-62.5T734-382q-28-14-57.5-23.5T616-418q21 16 32.5 42.5T660-318v158h140ZM362-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Zm254-40q-50 0-85-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35Z"/></svg>
+        Clientes
+      </div>
+      <div class="mas-item" onclick="irA('fiado', null); cerrarMenuMas()">
+        <svg xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor" style="flex-shrink:0"><path d="M140-160q-33 0-56.5-23.5T60-240v-480q0-33 23.5-56.5T140-800h680q33 0 56.5 23.5T940-720v480q0 33-23.5 56.5T820-160H140Zm0-80h680v-240H140v240Zm0-320h680v-80H140v80Zm0 320v-240 240Z"/></svg>
+        Fiado
+      </div>
+      <div class="mas-item" onclick="irA('ajustes', null); cerrarMenuMas()">
+        <svg xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor" style="flex-shrink:0"><path d="m370-80-16-128q-25-5-46.5-17T267-257l-121 51-80-138 102-78q-2-12-2-28t2-28L66-556l80-138 121 51q20-19 41.5-31t46.5-17l16-128h160l16 128q25 5 46.5 17t40.5 32l121-51 80 138-102 78q2 12 2 28t-2 28l102 78-80 138-121-51q-20 19-41.5 31t-46.5 17L590-80H370Zm80-280q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35Z"/></svg>
+        Ajustes
+      </div>
+    </div>
+  </div>
+
+</div><!-- fin .app -->
+
+
+<!-- ================================================
+     OVERLAY: CÁMARA DE ESCANEO
+     ================================================ -->
+<div class="camara-overlay" id="camara-overlay">
+  <div class="camara-vista" id="camara-vista">
+    <div class="camara-flash" id="camara-flash"></div>
+    <div class="camara-marco">
+      <div class="esquina esquina-tl"></div>
+      <div class="esquina esquina-tr"></div>
+      <div class="esquina esquina-bl"></div>
+      <div class="esquina esquina-br"></div>
+      <div class="linea-escaneo"></div>
+    </div>
+    <p class="camara-hint">Apuntá al código de barras</p>
+  </div>
+  <div class="camara-controles">
+    <div class="camara-contador">
+      Escaneados: <strong id="camara-count">0</strong>
+    </div>
+    <button class="btn-listo-camara" onclick="cerrarCamara()">Listo</button>
+    <button class="btn-manual-camara" onclick="cerrarCamara(); abrirBusqueda()">
+      Agregar por nombre
+    </button>
+  </div>
+</div>
+
+
+<!-- ================================================
+     OVERLAY: BÚSQUEDA POR NOMBRE
+     ================================================ -->
+<div class="busqueda-overlay" id="busqueda-overlay">
+  <div class="busqueda-header">
+    <span class="btn-volver" onclick="cerrarBusqueda()">←</span>
+    <input class="busqueda-input" id="busqueda-input"
+           placeholder="Nombre del producto..."
+           oninput="filtrarBusqueda(this.value)"/>
+  </div>
+  <div class="busqueda-resultados" id="busqueda-resultados"></div>
+</div>
+
+
+<!-- ================================================
+     OVERLAY: NUEVO PRODUCTO
+     ================================================ -->
+<div class="formulario-overlay" id="form-nuevo-producto">
+  <div class="formulario-header">
+    <span class="btn-volver" onclick="cerrarNuevoProducto()">←</span>
+    <span class="formulario-titulo" id="form-prod-titulo">Agregar producto</span>
+  </div>
+  <div class="formulario-cuerpo">
+
+    <!-- Botón escanear -->
+    <button onclick="escanearParaStock()" style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:#185FA5;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;width:100%;margin-bottom:14px;font-family:Arial,sans-serif">
+
+    <svg xmlns="http://www.w3.org/2000/svg"
+       height="24"
+       viewBox="0 -960 960 960"
+       width="24"
+       fill="white">
+    <path d="M40-120v-200h80v120h120v80H40Zm680 0v-80h120v-120h80v200H720ZM160-240v-480h80v480h-80Zm120 0v-480h40v480h-40Zm120 0v-480h80v480h-80Zm120 0v-480h120v480H520Zm160 0v-480h40v480h-40Zm80 0v-480h40v480h-40ZM40-640v-200h200v80H120v120H40Zm800 0v-120H720v-80h200v200h-80Z"/>
+    </svg>
+
+  <span>Escanear Código</span>
+
+</button>
+
+    <!-- Badge de confirmación -->
+    <div class="badge-auto" id="badge-auto" style="display:none">
+      ✓ Datos cargados automáticamente
+    </div>
+
+    <!-- Separador -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <div style="flex:1;height:0.5px;background:var(--borde)"></div>
+      <span style="font-size:11px;color:var(--texto-secundario)">o completá manualmente</span>
+      <div style="flex:1;height:0.5px;background:var(--borde)"></div>
+    </div>
+
+    <!-- Nombre -->
+    <label class="etiqueta-campo" style="letter-spacing:0.5px">NOMBRE DEL PRODUCTO</label>
+    <input class="input-campo" id="prod-nombre" placeholder="Ej: Coca Cola 500ml"/>
+
+    <!-- Se vende por peso -->
+    <label class="check-vende-peso" id="wrap-vende-peso" for="prod-vende-peso">
+      <input type="checkbox" id="prod-vende-peso" onchange="toggleVendePorPeso()"/>
+      <span>Venta por peso (kg)</span>
+    </label>
+
+    <!-- Precio y Costo -->
+    <div class="grilla-dos-columnas">
+      <div>
+        <label class="etiqueta-campo" id="label-prod-precio" style="letter-spacing:0.5px">PRECIO VENTA</label>
+        <input class="input-campo" id="prod-precio" type="number" placeholder="$0"/>
+      </div>
+      <div>
+        <label class="etiqueta-campo" id="label-prod-costo" style="letter-spacing:0.5px">COSTO</label>
+        <input class="input-campo" id="prod-costo" type="number" placeholder="$0"/>
+      </div>
+    </div>
+
+    <!-- Fecha de vencimiento (opcional) -->
+    <label class="etiqueta-campo" style="letter-spacing:0.5px">VENCIMIENTO (opcional)</label>
+    <input class="input-campo" id="prod-vencimiento" type="date"/>
+
+    <!-- Stock con botones + y - -->
+    <label class="etiqueta-campo" id="label-prod-stock" style="letter-spacing:0.5px">CANTIDAD DE STOCK</label>
+    <div style="background:var(--fondo-card);border-radius:10px;border:0.5px solid var(--borde);padding:6px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <button onclick="cambiarStockFormulario(-1)"
+        style="width:36px;height:36px;border-radius:50%;border:0.5px solid var(--borde);background:var(--fondo-secundario);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--texto);font-family:Arial,sans-serif">
+        −
+      </button>
+      <span id="prod-stock-display" 
+  onclick="editarStockManual()"
+  style="font-size:22px;font-weight:700;color:var(--texto);cursor:pointer;text-decoration:underline dotted;min-width:40px;text-align:center">0</span>
+      <button onclick="cambiarStockFormulario(1)"
+        style="width:36px;height:36px;border-radius:50%;border:none;background:#185FA5;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-family:Arial,sans-serif">
+        +
+      </button>
+    </div>
+
+    <!-- Campos ocultos -->
+    <input type="hidden" id="prod-stock"/>
+    <input type="hidden" id="prod-stock-min" value="5"/>
+    <input type="hidden" id="prod-codigo"/>
+
+    <!-- Categoría -->
+    <label class="etiqueta-campo" style="letter-spacing:0.5px">CATEGORÍA</label>
+    <input class="input-campo" id="prod-categoria" placeholder="Ej: Bebidas"/>
+
+    <!-- Guardar producto y eliminar -->
+    <button onclick="guardarProducto()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:15px;background:#27ae60;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-top:8px;font-family:Arial,sans-serif">
+      ✓ Guardar producto
+    </button>
+
+    <button onclick="eliminarProducto()" id="btn-eliminar-producto" style="display:none;align-items:center;justify-content:center;gap:8px;padding:15px;background:transparent;border:1.5px solid #c0392b;border-radius:12px;color:#c0392b;font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-top:8px;font-family:Arial,sans-serif">
+      🗑 Eliminar producto
+    </button>
+
+  </div>
+</div>
+
+
+<!-- ================================================
+     OVERLAY: NUEVO CLIENTE
+     ================================================ -->
+<div class="formulario-overlay" id="form-nuevo-cliente">
+  <div class="formulario-header">
+    <span class="btn-volver" onclick="cerrarNuevoCliente()">←</span>
+    <span class="formulario-titulo">Nuevo Cliente</span>
+  </div>
+  <div class="formulario-cuerpo">
+    <label class="etiqueta-campo">Nombre o Apodo</label>
+    <input class="input-campo" id="cliente-nombre" placeholder="Ej: Maria Bazan"/>
+
+    <label class="etiqueta-campo">Celular</label>
+    <input class="input-campo" id="cliente-tel" placeholder="Ej: 3804 224-555"/>
+
+    <label class="etiqueta-campo">Notas (opcional)</label>
+    <input class="input-campo" id="cliente-nota" placeholder="Ej: vive en Urquiza 720"/>
+
+    <button class="btn-primario ancho-completo" onclick="guardarCliente()">
+      Guardar cliente
+    </button>
+  </div>
+</div>
+
+
+<!-- ================================================
+     MODAL: COBRO (pantalla completa)
+     ================================================ -->
+<div class="cobro-overlay" id="modal-cobro">
+  <div class="cobro-header">
+    <span class="btn-volver" onclick="cerrarModal('modal-cobro')">←</span>
+    <span class="formulario-titulo">Confirmar cobro</span>
+  </div>
+
+  <div class="cobro-cuerpo">
+
+    <div class="fila-total-cobro">
+      <span class="total-label">Total</span>
+      <span id="modal-total" class="total-monto-grande">$0</span>
+    </div>
+
+    <!-- Selector de pago abierto (3 botones grandes) -->
+    <div id="selector-pago-abierto">
+      <p class="etiqueta-campo">¿Cómo paga?</p>
+      <div class="grilla-pago-grande">
+        <button class="btn-pago-grande" id="btnpago-fiado" onclick="seleccionarPago('fiado')">
+          <span class="btn-pago-icono">🤝</span>
+          <span>Fiado</span>
+        </button>
+        <button class="btn-pago-grande" id="btnpago-efectivo" onclick="seleccionarPago('efectivo')">
+          <span class="btn-pago-icono">💵</span>
+          <span>Efectivo</span>
+        </button>
+        <button class="btn-pago-grande" id="btnpago-transferencia" onclick="seleccionarPago('transferencia')">
+          <span class="btn-pago-icono">📲</span>
+          <span>Transferencia</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Selector de pago compacto (una vez elegido) -->
+    <div id="selector-pago-compacto" class="chip-pago-elegido" style="display:none">
+      <div class="chip-pago-info">
+        <span id="chip-pago-icono">💵</span>
+        <span id="chip-pago-label">Efectivo</span>
+      </div>
+      <span class="chip-pago-cambiar" onclick="cambiarFormaPago()">Cambiar</span>
+    </div>
+
+    <!-- Solo visible con efectivo -->
+    <div id="bloque-efectivo-modal" style="display:none">
+      <p class="etiqueta-campo">Abona con</p>
+      <div class="pantalla-recibe" id="pantalla-recibe">$0</div>
+
+      <div class="grilla-montos-rapidos">
+        <button class="btn-monto-rapido" onclick="setMontoRapido(1000)">$1.000</button>
+        <button class="btn-monto-rapido" onclick="setMontoRapido(2000)">$2.000</button>
+        <button class="btn-monto-rapido" onclick="setMontoRapido(10000)">$10.000</button>
+        <button class="btn-monto-rapido" onclick="setMontoRapido(20000)">$20.000</button>
+      </div>
+
+      <div class="teclado-numerico">
+        <button class="btn-tecla" onclick="tocarTecla('7')">7</button>
+        <button class="btn-tecla" onclick="tocarTecla('8')">8</button>
+        <button class="btn-tecla" onclick="tocarTecla('9')">9</button>
+        <button class="btn-tecla" onclick="tocarTecla('4')">4</button>
+        <button class="btn-tecla" onclick="tocarTecla('5')">5</button>
+        <button class="btn-tecla" onclick="tocarTecla('6')">6</button>
+        <button class="btn-tecla" onclick="tocarTecla('1')">1</button>
+        <button class="btn-tecla" onclick="tocarTecla('2')">2</button>
+        <button class="btn-tecla" onclick="tocarTecla('3')">3</button>
+        <button class="btn-tecla" onclick="tocarTecla('000')">000</button>
+        <button class="btn-tecla" onclick="tocarTecla('0')">0</button>
+        <button class="btn-tecla btn-tecla-borrar" onclick="borrarTecla()">⌫</button>
+      </div>
+
+      <div class="fila-vuelto">
+        <span>Vuelto</span>
+        <span class="monto-vuelto" id="monto-vuelto">$0</span>
+      </div>
+    </div>
+
+    <!-- Solo visible con fiado -->
+    <div id="bloque-fiado-modal" style="display:none;margin-bottom:12px">
+      <label class="etiqueta-campo">¿A quién se le fía?</label>
+      <select class="input-campo" id="cobro-cliente">
+        <option value="">— Seleccioná un cliente —</option>
+      </select>
+    </div>
+
+  </div>
+
+  <div class="cobro-footer">
+    <button class="btn-confirmar-grande" onclick="confirmarCobro()">Confirmar cobro</button>
+  </div>
+</div>
+
+<!-- ================================================
+     PANTALLA: PESADA (productos que se venden por kg)
+     ================================================ -->
+<div class="cobro-overlay" id="pantalla-pesada">
+  <div class="cobro-header">
+    <span class="btn-volver" onclick="cerrarPantallaPesada()">←</span>
+    <span class="formulario-titulo" id="pesada-titulo">Producto</span>
+  </div>
+
+  <div class="cobro-cuerpo">
+
+    <div class="info-precio-kg">
+      <span>Precio por kg</span>
+      <span id="pesada-precio-kg">$0</span>
+    </div>
+
+    <p class="etiqueta-campo" style="text-align:center">¿Cuántos gramos vendiste?</p>
+    <div class="pantalla-recibe" id="pesada-gramos-display">0 gr</div>
+
+    <div class="grilla-montos-rapidos">
+      <button class="btn-monto-rapido" onclick="setGramosRapido(100)">100gr</button>
+      <button class="btn-monto-rapido" onclick="setGramosRapido(250)">250gr</button>
+      <button class="btn-monto-rapido" onclick="setGramosRapido(500)">500gr</button>
+      <button class="btn-monto-rapido" onclick="setGramosRapido(1000)">1kg</button>
+    </div>
+
+    <div class="teclado-numerico">
+      <button class="btn-tecla" onclick="tocarTeclaGramos('7')">7</button>
+      <button class="btn-tecla" onclick="tocarTeclaGramos('8')">8</button>
+      <button class="btn-tecla" onclick="tocarTeclaGramos('9')">9</button>
+      <button class="btn-tecla" onclick="tocarTeclaGramos('4')">4</button>
+      <button class="btn-tecla" onclick="tocarTeclaGramos('5')">5</button>
+      <button class="btn-tecla" onclick="tocarTeclaGramos('6')">6</button>
+      <button class="btn-tecla" onclick="tocarTeclaGramos('1')">1</button>
+      <button class="btn-tecla" onclick="tocarTeclaGramos('2')">2</button>
+      <button class="btn-tecla" onclick="tocarTeclaGramos('3')">3</button>
+      <button class="btn-tecla" onclick="tocarTeclaGramos('000')">000</button>
+      <button class="btn-tecla" onclick="tocarTeclaGramos('0')">0</button>
+      <button class="btn-tecla btn-tecla-borrar" onclick="borrarTeclaGramos()">⌫</button>
+    </div>
+
+    <div class="fila-vuelto">
+      <span>Subtotal</span>
+      <span class="monto-vuelto" id="pesada-subtotal">$0</span>
+    </div>
+
+  </div>
+
+  <div class="cobro-footer">
+    <button class="btn-confirmar-grande" onclick="agregarPesadoAlCarrito()">Agregar al carrito</button>
+  </div>
+</div>
+
+<!-- ================================================
+     PANTALLA: CONFIRMACIÓN DE VENTA (pantalla completa)
+     ================================================ -->
+    <div class="confirmacion-overlay" id="pantalla-confirmacion-venta">
+      <i class="confirmacion-icono">✅</i>
+      <p class="confirmacion-titulo">Venta registrada</p>
+
+      <div class="confirmacion-card">
+        <p class="confirmacion-card-label">Total cobrado</p>
+        <p class="confirmacion-card-monto" id="confirmacion-total">$0</p>
+      </div>
+
+      <div class="confirmacion-card confirmacion-card-vuelto" id="confirmacion-bloque-vuelto">
+        <p class="confirmacion-card-label">Vuelto a entregar</p>
+        <p class="confirmacion-card-monto confirmacion-monto-vuelto" id="confirmacion-vuelto">$0</p>
+      </div>
+
+      <button class="btn-confirmar-grande" onclick="cerrarConfirmacionVenta()">Listo</button>
+    </div>
+
+<!-- ================================================
+     MODAL: PAGO DE FIADO
+     ================================================ -->
+<div class="modal-overlay" id="modal-pago-fiado">
+  <div class="modal-cuerpo">
+    <p class="modal-titulo">Registrar pago</p>
+
+    <div class="grupo-campo">
+      <label class="etiqueta-campo">Cliente</label>
+      <select class="input-campo" id="fiado-cliente-sel" onchange="mostrarDeudaCliente()"></select>
+    </div>
+
+    <div class="alerta-deuda" id="alerta-deuda" style="display:none">
+      Deuda actual: <strong id="deuda-actual-monto">$0</strong>
+    </div>
+
+    <div class="grupo-campo">
+      <label class="etiqueta-campo">Monto que paga ($)</label>
+      <input class="input-campo" id="fiado-monto" type="number" placeholder="0"/>
+    </div>
+
+    <div class="modal-botones">
+      <button class="btn-secundario" onclick="cerrarModal('modal-pago-fiado')">Cancelar</button>
+      <button class="btn-primario" onclick="confirmarPagoFiado()">Registrar pago</button>
+    </div>
+  </div>
+</div>
+
+
+<script src="script.js"></script>
+
+
+
+</body>
+</html>
