@@ -8,7 +8,7 @@
    CONFIGURACIÓN GENERAL
    ================================================ */
 
-const WHATSAPP_SOPORTE     = '5491130960864';
+const WHATSAPP_SOPORTE     = '5493804887124';
 const STOCK_MINIMO_DEFAULT = 5;
 
 // ── Supabase ──────────────────────────────────
