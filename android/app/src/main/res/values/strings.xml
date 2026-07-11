@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">VendoMas</string>
+    <string name="title_activity_main">VendoMas</string>
+    <string name="package_name">com.vendomas.app</string>
+    <string name="custom_url_scheme">com.vendomas.app</string>
+</resources>

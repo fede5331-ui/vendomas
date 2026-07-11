@@ -1,0 +1,6 @@
+node_modules/
+android/.gradle/
+android/app/build/
+.DS_Store
+*.apk
+*.aab

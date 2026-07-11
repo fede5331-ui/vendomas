@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" rx="230" fill="#1a1a2e"/>
+  <text x="512" y="460" font-family="Arial, sans-serif" font-size="260" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="-8">Vendo</text>
+  <text x="512" y="720" font-family="Arial, sans-serif" font-size="260" font-weight="700" fill="#4fc97e" text-anchor="middle" letter-spacing="-8">Mas</text>
+</svg>
