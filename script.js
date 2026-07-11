@@ -23,6 +23,12 @@ const CLAVE_LICENCIA_CACHE = 'gestion_licencia_v3';
 
 // Función principal que corre al arrancar la app
 async function verificarLicenciaV3() {
+  // PWA: si no hay Capacitor, abrimos la app directamente
+  if (!window.Capacitor) {
+    abrirAplicacionNormal();
+    return;
+  }
+  
   try {
     const { Device } = Capacitor.Plugins;
 
