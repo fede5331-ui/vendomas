@@ -55,36 +55,51 @@
 <body>
   <div class="card">
     <div class="logo">Vendo<span>Mas</span></div>
-    <p class="subtitulo">App de Gestión para tu Negocio</p>
+    <p class="subtitulo">App de Gestión para tu Negocio</p>  
 
-    <label>Ingrese su Numero de Celular</label>
+    <label>Ingrese su Celular</label>
     <input type="tel" id="input-telefono"
-      placeholder="Ej: 3804111522"
+      placeholder="Ej: 3804887124"
       maxlength="15"
       inputmode="numeric"/>
 
     <button onclick="ingresar()">Ingresar →</button>
-    <p class="error" id="error-msg">Ingresá tu número de celular</p>
+    <p class="error" id="error-msg">Ingresá tu número de celular</p>  
   </div>
 
   <script>
     const SUPABASE_URL = 'https://hscvjeyepeogpaqtutni.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_bPdXXh9QywZH53mSH55MRA_6NDU-WkZ';
 
-    // Al cargar, verificamos si ya hay sesión guardada
+    // Al cargar verificamos si ya hay sesión guardada
     window.addEventListener('load', () => {
       const sesion = localStorage.getItem('vendomas_pwa_sesion');
       if (sesion) {
-        // Ya tiene sesión, vamos directo a la app
         window.location.href = 'index.html';
+        return;
+      }
+      // Autocompletar número si ya lo ingresó antes
+      const telGuardado = localStorage.getItem('vendomas_telefono');
+      if (telGuardado) {
+        document.getElementById('input-telefono').value = telGuardado;
       }
     });
+
+    // Genera o recupera el UUID de este navegador
+    function obtenerUuidPwa() {
+      let uuid = localStorage.getItem('vendomas_uuid_pwa');
+      if (!uuid) {
+        uuid = 'pwa_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+        localStorage.setItem('vendomas_uuid_pwa', uuid);
+      }
+      return uuid;
+    }
 
     async function ingresar() {
       const telefono = document.getElementById('input-telefono').value.trim();
       const errorMsg = document.getElementById('error-msg');
 
-      if (!telefono || telefono.length < 8) {
+      if (!telefono || telefono.length < 6) {
         errorMsg.style.display = 'block';
         errorMsg.textContent = 'Ingresá un número válido';
         return;
@@ -96,88 +111,92 @@
       btn.disabled = true;
 
       try {
-        // Generamos UUID único para este navegador
-        let uuidPwa = localStorage.getItem('vendomas_uuid_pwa');
-        if (!uuidPwa) {
-          uuidPwa = 'pwa_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-          localStorage.setItem('vendomas_uuid_pwa', uuidPwa);
-        }
+        const uuidPwa = obtenerUuidPwa();
 
-        // Verificamos si el teléfono ya existe en Supabase
-        const r = await fetch(`${SUPABASE_URL}/rest/v1/dispositivos?telefono=eq.${telefono}&select=uuid_pwa,bloqueado,suscripcion,dias_prueba`, {
-          headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`
+        // Buscamos si el teléfono ya existe en Supabase
+        const r = await fetch(
+          `${SUPABASE_URL}/rest/v1/dispositivos?telefono=eq.${encodeURIComponent(telefono)}&select=id,uuid_pwa,bloqueado`,
+          {
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
           }
-        });
+        );
         const data = await r.json();
 
-        if (data.length > 0) {
-          // El teléfono ya existe
+        if (data && data.length > 0) {
           const registro = data[0];
 
-          // Verificamos si está bloqueado
-          if (registro.bloqueado) {
-            mostrarBloqueo();
+          // Verificamos si está bloqueado manualmente por el admin
+          if (registro.bloqueado === true) {
+            mostrarBloqueo('Tu acceso fue bloqueado. Contactá a soporte.');
             return;
           }
 
-          // Verificamos que el UUID coincida
+          // Si tiene uuid_pwa y no coincide con el actual → posible uso en otro dispositivo
           if (registro.uuid_pwa && registro.uuid_pwa !== uuidPwa) {
-            mostrarBloqueo();
+            mostrarBloqueo('Este número ya está registrado en otro dispositivo. Contactá a soporte.');
             return;
           }
 
-          // Si no tenía uuid_pwa, lo actualizamos
-          if (!registro.uuid_pwa) {
-            await fetch(`${SUPABASE_URL}/rest/v1/dispositivos?telefono=eq.${telefono}`, {
+          // Actualizamos uuid_pwa y ultimo_acceso
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/dispositivos?id=eq.${registro.id}`,
+            {
               method: 'PATCH',
               headers: {
                 'apikey': SUPABASE_KEY,
                 'Authorization': `Bearer ${SUPABASE_KEY}`,
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify({ uuid_pwa: uuidPwa, ultimo_acceso: new Date().toISOString() })
-            });
-          }
+              body: JSON.stringify({
+                uuid_pwa: uuidPwa,
+                ultimo_acceso: new Date().toISOString()
+              })
+            }
+          );
 
         } else {
-          // Primera vez, lo registramos
-          await fetch(`${SUPABASE_URL}/rest/v1/dispositivos`, {
-            method: 'POST',
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify({
-              uuid: uuidPwa,
-              uuid_pwa: uuidPwa,
-              telefono: telefono,
-              marca: 'PWA',
-              modelo: navigator.userAgent.slice(0, 50),
-              negocio: 'VendoMas',
-              fecha_registro: new Date().toISOString(),
-              ultimo_acceso: new Date().toISOString()
-            })
-          });
+          // Primera vez — registramos el dispositivo
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/dispositivos`,
+            {
+              method: 'POST',
+              headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal'
+              },
+              body: JSON.stringify({
+                uuid: uuidPwa,
+                uuid_pwa: uuidPwa,
+                telefono: telefono,
+                marca: 'PWA',
+                modelo: navigator.userAgent.slice(0, 80),
+                negocio: 'VendoMas',
+                bloqueado: false,
+                fecha_registro: new Date().toISOString(),
+                ultimo_acceso: new Date().toISOString()
+              })
+            }
+          );
         }
 
-        // Guardamos la sesión localmente
+        // Guardamos sesión localmente
         localStorage.setItem('vendomas_pwa_sesion', JSON.stringify({
           telefono: telefono,
           uuid: uuidPwa,
           timestamp: Date.now()
         }));
-
-        // Guardamos el teléfono para autocompletar la próxima vez
         localStorage.setItem('vendomas_telefono', telefono);
 
         // Vamos a la app
         window.location.href = 'index.html';
 
       } catch(e) {
+        console.error('Error login:', e);
         btn.textContent = 'Ingresar →';
         btn.disabled = false;
         errorMsg.style.display = 'block';
@@ -185,24 +204,15 @@
       }
     }
 
-    function mostrarBloqueo() {
+    function mostrarBloqueo(mensaje) {
       document.querySelector('.card').innerHTML = `
         <div style="font-size:48px;margin-bottom:16px">🔒</div>
         <p style="font-size:18px;font-weight:700;color:#c0392b;margin-bottom:10px">Acceso bloqueado</p>
-        <p style="font-size:13px;color:#666;margin-bottom:24px;line-height:1.6">
-          Tu acceso fue bloqueado o este número ya está registrado en otro dispositivo.
-          Contactá a soporte para resolverlo.
-        </p>
-        <button onclick="window.open('https://wa.me/5491130960864')" style="background:#25D366">
+        <p style="font-size:13px;color:#666;margin-bottom:24px;line-height:1.6">${mensaje}</p>
+        <button onclick="window.open('https://wa.me/5491130960864')" style="background:#25D366;border-radius:12px;padding:15px;width:100%;border:none;color:#fff;font-size:16px;font-weight:600;cursor:pointer">
           📱 Contactar por WhatsApp
         </button>
       `;
-    }
-
-    // Autocompletar el número si ya lo ingresó antes
-    const telGuardado = localStorage.getItem('vendomas_telefono');
-    if (telGuardado) {
-      document.getElementById('input-telefono').value = telGuardado;
     }
   </script>
 </body>
