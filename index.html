@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta http-equiv="refresh" content="0; url=login.html">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>VendoMas</title>
@@ -666,6 +665,13 @@
 
 
 <script src="script.js"></script>
+
+<script>
+  // Verificar sesión PWA
+  if (!localStorage.getItem('vendomas_pwa_sesion')) {
+    window.location.href = 'login.html';
+  }
+</script>
 
 </body>
 </html>
