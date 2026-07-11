@@ -28,7 +28,7 @@ async function verificarLicenciaV3() {
     abrirAplicacionNormal();
     return;
   }
-  
+
   try {
     const { Device } = Capacitor.Plugins;
 
@@ -312,6 +312,60 @@ let filtroStockActivo     = 'todos';
 let recibeActual           = '';
 let gramosActual            = '';
 let productoPesandoActual   = null;
+
+let controlesEscaneoWeb      = null;
+let rechazarEscaneoWebActual = null;
+
+// Abre la cámara del navegador y devuelve el código de barras leído (modo PWA)
+function escanearCodigoWeb() {
+  return new Promise((resolve, reject) => {
+    const video   = document.getElementById('camara-video');
+    const overlay = document.getElementById('camara-overlay');
+
+    if (!window.ZXingBrowser) {
+      reject(new Error('No se pudo cargar el lector de códigos'));
+      return;
+    }
+
+    overlay.classList.add('abierta');
+    video.style.display = 'block';
+    rechazarEscaneoWebActual = reject;
+
+    const codeReader = new ZXingBrowser.BrowserMultiFormatReader();
+
+    codeReader.decodeFromConstraints(
+      { video: { facingMode: 'environment' } },
+      video,
+      (resultado, error, controls) => {
+        controlesEscaneoWeb = controls;
+        if (resultado) {
+          cerrarCamara();
+          resolve(resultado.getText());
+        }
+        // Los errores "no encontrado" se disparan en cada cuadro sin código — los ignoramos
+      }
+    ).catch(err => {
+      cerrarCamara();
+      reject(err);
+    });
+  });
+}
+
+// Cierra la cámara del navegador (conecta con los botones "Listo" y "Agregar por nombre" del overlay)
+function cerrarCamara() {
+  if (controlesEscaneoWeb) {
+    controlesEscaneoWeb.stop();
+    controlesEscaneoWeb = null;
+  }
+  document.getElementById('camara-video').style.display = 'none';
+  document.getElementById('camara-overlay').classList.remove('abierta');
+
+  if (rechazarEscaneoWebActual) {
+    const rechazar = rechazarEscaneoWebActual;
+    rechazarEscaneoWebActual = null;
+    rechazar(new Error('cancelado'));
+  }
+}
 
 function cargarBaseDeDatos() {
   try {
@@ -642,22 +696,30 @@ async function asegurarModuloEscaneo(BarcodeScanner) {
 
 async function pruebaScanner() {
   try {
-    const { BarcodeScanner } = Capacitor.Plugins;
+    let codigo;
 
-    const { camera } = await BarcodeScanner.requestPermissions();
-    if (camera !== 'granted' && camera !== 'limited') {
-      alert('Necesitás dar permiso de cámara');
-      return;
+    if (window.Capacitor) {
+      // Modo app nativa: usamos el escáner ML Kit
+      const { BarcodeScanner } = Capacitor.Plugins;
+
+      const { camera } = await BarcodeScanner.requestPermissions();
+      if (camera !== 'granted' && camera !== 'limited') {
+        alert('Necesitás dar permiso de cámara');
+        return;
+      }
+
+      const listo = await asegurarModuloEscaneo(BarcodeScanner);
+      if (!listo) return;
+
+      const resultado = await BarcodeScanner.scan({formats: ['EAN_13']});
+      if (!resultado.barcodes?.length) return;
+      codigo = resultado.barcodes[0].rawValue;
+
+    } else {
+      // Modo PWA: usamos la cámara del navegador
+      codigo = await escanearCodigoWeb();
     }
 
-    // ✅ FIX: verificar si el módulo de Google está instalado
-    const listo = await asegurarModuloEscaneo(BarcodeScanner);
-    if (!listo) return;
-
-    const resultado = await BarcodeScanner.scan({formats: ['EAN_13']});
-    if (!resultado.barcodes?.length) return;
-
-    const codigo       = resultado.barcodes[0].rawValue;
     const codigoPadded = codigo.padStart(13, '0');
 
     const productoLocal = bd.productos.find(p =>
@@ -1479,28 +1541,36 @@ function eliminarProducto() {
 
 
 // Escáner para el formulario de Stock
+// Escáner para el formulario de Stock
 async function escanearParaStock() {
   try {
-    const { BarcodeScanner } = Capacitor.Plugins;
-    const { camera } = await BarcodeScanner.requestPermissions();
-    if (camera !== 'granted' && camera !== 'limited') {
-      alert('Necesitás dar permiso de cámara');
-      return;
-    }
-
-    // ✅ FIX: verificar si el módulo de Google está instalado
-    const listo = await asegurarModuloEscaneo(BarcodeScanner);
-    if (!listo) return;
-
-    const resultado = await BarcodeScanner.scan({formats: ['EAN_13']});
-
     let codigo = null;
-    if (resultado?.barcodes?.length) {
-      codigo = resultado.barcodes[0].rawValue;
-    } else if (resultado?.hasContent) {
-      codigo = resultado.content;
-    } else if (typeof resultado === 'string') {
-      codigo = resultado;
+
+    if (window.Capacitor) {
+      // Modo app nativa: usamos el escáner ML Kit
+      const { BarcodeScanner } = Capacitor.Plugins;
+      const { camera } = await BarcodeScanner.requestPermissions();
+      if (camera !== 'granted' && camera !== 'limited') {
+        alert('Necesitás dar permiso de cámara');
+        return;
+      }
+
+      const listo = await asegurarModuloEscaneo(BarcodeScanner);
+      if (!listo) return;
+
+      const resultado = await BarcodeScanner.scan({formats: ['EAN_13']});
+
+      if (resultado?.barcodes?.length) {
+        codigo = resultado.barcodes[0].rawValue;
+      } else if (resultado?.hasContent) {
+        codigo = resultado.content;
+      } else if (typeof resultado === 'string') {
+        codigo = resultado;
+      }
+
+    } else {
+      // Modo PWA: usamos la cámara del navegador
+      codigo = await escanearCodigoWeb();
     }
 
     if (!codigo) return;

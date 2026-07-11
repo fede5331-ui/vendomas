@@ -814,6 +814,17 @@ body {
   background: transparent;
 }
 
+/* Video de la cámara del navegador (solo en modo PWA) */
+#camara-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none; /* Se muestra por JS solo cuando la cámara está activa */
+}
+
 /* Mientras se escanea, ocultamos toda la app y
    dejamos el fondo transparente para que se vea
    la cámara nativa detrás del overlay */

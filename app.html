@@ -308,6 +308,7 @@
      ================================================ -->
 <div class="camara-overlay" id="camara-overlay">
   <div class="camara-vista" id="camara-vista">
+    <video id="camara-video" autoplay muted playsinline></video>
     <div class="camara-flash" id="camara-flash"></div>
     <div class="camara-marco">
       <div class="esquina esquina-tl"></div>
@@ -663,6 +664,9 @@
   </div>
 </div>
 
+
+<!-- Librería para leer códigos de barras desde la cámara del navegador (solo se usa en modo PWA) -->
+<script src="https://cdn.jsdelivr.net/npm/@zxing/browser@latest/umd/index.min.js"></script>
 
 <script src="script.js"></script>
 
