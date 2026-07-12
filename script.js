@@ -381,12 +381,15 @@ function escanearCodigoWeb() {
           contadorEscaneo++;
           const contadorEl = document.getElementById('camara-count');
           if (contadorEl) contadorEl.textContent = contadorEscaneo;
-          detenerCamaraVisual();
-          resolve(resultado.getText());
+
+          setTimeout(() => {
+            detenerCamaraVisual();
+            resolve(resultado.getText());
+          }, 500);
+
         } else if (error && error.name !== 'NotFoundException') {
           console.log('ZXing error:', error.name, error.message);
         }
-      }
     ).catch(err => {
       rechazarEscaneoWebActual = null;
       detenerCamaraVisual();
