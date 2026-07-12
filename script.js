@@ -343,6 +343,20 @@ function escanearCodigoWeb() {
 
     video.addEventListener('loadedmetadata', () => {
       console.log('Resolución real de la cámara:', video.videoWidth, 'x', video.videoHeight);
+
+      const track = video.srcObject && video.srcObject.getVideoTracks()[0];
+      if (track && track.getCapabilities) {
+        const capacidades = track.getCapabilities();
+        console.log('Modos de enfoque soportados:', capacidades.focusMode);
+
+        if (capacidades.focusMode && capacidades.focusMode.includes('continuous')) {
+          track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
+            .then(() => console.log('✅ Enfoque continuo activado'))
+            .catch(err => console.log('❌ No se pudo activar enfoque continuo:', err));
+        } else {
+          console.log('⚠️ Este dispositivo no permite controlar el enfoque desde el navegador');
+        }
+      }
     }, { once: true });
 
     const codeReader = new ZXingBrowser.BrowserMultiFormatReader();
