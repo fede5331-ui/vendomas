@@ -341,8 +341,9 @@ function escanearCodigoWeb() {
         if (resultado) {
           cerrarCamara();
           resolve(resultado.getText());
+        } else if (error && error.name !== 'NotFoundException') {
+          console.log('ZXing error:', error.name, error.message);
         }
-        // Los errores "no encontrado" se disparan en cada cuadro sin código — los ignoramos
       }
     ).catch(err => {
       cerrarCamara();
