@@ -316,6 +316,16 @@ let productoPesandoActual   = null;
 let controlesEscaneoWeb      = null;
 let rechazarEscaneoWebActual = null;
 
+// Apaga la cámara visualmente (sin tocar la lógica de cancelar/rechazar)
+function detenerCamaraVisual() {
+  if (controlesEscaneoWeb) {
+    controlesEscaneoWeb.stop();
+    controlesEscaneoWeb = null;
+  }
+  document.getElementById('camara-video').style.display = 'none';
+  document.getElementById('camara-overlay').classList.remove('abierta');
+}
+
 // Abre la cámara del navegador y devuelve el código de barras leído (modo PWA)
 function escanearCodigoWeb() {
   return new Promise((resolve, reject) => {
@@ -334,19 +344,27 @@ function escanearCodigoWeb() {
     const codeReader = new ZXingBrowser.BrowserMultiFormatReader();
 
     codeReader.decodeFromConstraints(
-      { video: { facingMode: 'environment' } },
+      {
+        video: {
+          facingMode: 'environment',
+          width:  { min: 640, ideal: 1920 },
+          height: { min: 480, ideal: 1080 }
+        }
+      },
       video,
       (resultado, error, controls) => {
         controlesEscaneoWeb = controls;
         if (resultado) {
-          cerrarCamara();
+          rechazarEscaneoWebActual = null; // encontramos el código, ya no hace falta poder "cancelar"
+          detenerCamaraVisual();
           resolve(resultado.getText());
         } else if (error && error.name !== 'NotFoundException') {
           console.log('ZXing error:', error.name, error.message);
         }
       }
     ).catch(err => {
-      cerrarCamara();
+      rechazarEscaneoWebActual = null;
+      detenerCamaraVisual();
       reject(err);
     });
   });
@@ -354,13 +372,7 @@ function escanearCodigoWeb() {
 
 // Cierra la cámara del navegador (conecta con los botones "Listo" y "Agregar por nombre" del overlay)
 function cerrarCamara() {
-  if (controlesEscaneoWeb) {
-    controlesEscaneoWeb.stop();
-    controlesEscaneoWeb = null;
-  }
-  document.getElementById('camara-video').style.display = 'none';
-  document.getElementById('camara-overlay').classList.remove('abierta');
-
+  detenerCamaraVisual();
   if (rechazarEscaneoWebActual) {
     const rechazar = rechazarEscaneoWebActual;
     rechazarEscaneoWebActual = null;
