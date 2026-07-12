@@ -341,6 +341,10 @@ function escanearCodigoWeb() {
     video.style.display = 'block';
     rechazarEscaneoWebActual = reject;
 
+    video.addEventListener('loadedmetadata', () => {
+      console.log('Resolución real de la cámara:', video.videoWidth, 'x', video.videoHeight);
+    }, { once: true });
+
     const codeReader = new ZXingBrowser.BrowserMultiFormatReader();
 
     codeReader.decodeFromConstraints(
