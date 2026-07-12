@@ -390,6 +390,7 @@ function escanearCodigoWeb() {
         } else if (error && error.name !== 'NotFoundException') {
           console.log('ZXing error:', error.name, error.message);
         }
+      }
     ).catch(err => {
       rechazarEscaneoWebActual = null;
       detenerCamaraVisual();
