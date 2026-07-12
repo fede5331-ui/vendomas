@@ -341,6 +341,10 @@ function escanearCodigoWeb() {
     video.style.display = 'block';
     rechazarEscaneoWebActual = reject;
 
+    contadorEscaneo = 0;
+    const contadorElInicial = document.getElementById('camara-count');
+    if (contadorElInicial) contadorElInicial.textContent = '0';
+
     video.addEventListener('loadedmetadata', () => {
       console.log('Resolución real de la cámara:', video.videoWidth, 'x', video.videoHeight);
 
@@ -359,7 +363,7 @@ function escanearCodigoWeb() {
       }
     }, { once: true });
 
-    const codeReader = new ZXingBrowser.BrowserMultiFormatReader();
+    const codeReader = new ZXingBrowser.BrowserMultiFormatReader(null, 150);
 
     codeReader.decodeFromConstraints(
       {
@@ -374,6 +378,9 @@ function escanearCodigoWeb() {
         controlesEscaneoWeb = controls;
         if (resultado) {
           rechazarEscaneoWebActual = null; // encontramos el código, ya no hace falta poder "cancelar"
+          contadorEscaneo++;
+          const contadorEl = document.getElementById('camara-count');
+          if (contadorEl) contadorEl.textContent = contadorEscaneo;
           detenerCamaraVisual();
           resolve(resultado.getText());
         } else if (error && error.name !== 'NotFoundException') {
