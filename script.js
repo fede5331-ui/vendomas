@@ -316,11 +316,59 @@ let productoPesandoActual   = null;
 let controlesEscaneoWeb      = null;
 let rechazarEscaneoWebActual = null;
 
+// Motor de lectura rápido (Android/Chrome) — usa el mismo mecanismo que ML Kit
+// Llama a alDetectar(codigo) cada vez que encuentra un código. Devuelve una función para detenerlo.
+function iniciarMotorBarcodeDetector(video, alDetectar) {
+  const detector = new BarcodeDetector({ formats: ['ean_13'] });
+  let activo = true;
+
+  async function ciclo() {
+    if (!activo) return;
+    try {
+      const codigos = await detector.detect(video);
+      if (codigos.length > 0 && activo) {
+        alDetectar(codigos[0].rawValue);
+      }
+    } catch (err) {
+      // Ignoramos errores puntuales de un cuadro individual
+    }
+    if (activo) requestAnimationFrame(ciclo);
+  }
+
+  requestAnimationFrame(ciclo);
+
+  return function detener() {
+    activo = false;
+  };
+}
+
+
+// Prende la cámara del navegador y la deja lista para escanear
+let streamCamaraActual = null;
+
+function abrirStreamCamara(video) {
+  return navigator.mediaDevices.getUserMedia({
+    video: {
+      facingMode: 'environment',
+      width:  { min: 640, ideal: 1920 },
+      height: { min: 480, ideal: 1080 }
+    }
+  }).then(stream => {
+    streamCamaraActual = stream;
+    video.srcObject = stream;
+    return video.play();
+  });
+}
+
 // Apaga la cámara visualmente (sin tocar la lógica de cancelar/rechazar)
 function detenerCamaraVisual() {
   if (controlesEscaneoWeb) {
-    controlesEscaneoWeb.stop();
+    controlesEscaneoWeb(); // ahora es una función directa, no un objeto con .stop()
     controlesEscaneoWeb = null;
+  }
+  if (streamCamaraActual) {
+    streamCamaraActual.getTracks().forEach(track => track.stop());
+    streamCamaraActual = null;
   }
   document.getElementById('camara-video').style.display = 'none';
   document.getElementById('camara-overlay').classList.remove('abierta');
@@ -332,7 +380,7 @@ function escanearCodigoWeb() {
     const video   = document.getElementById('camara-video');
     const overlay = document.getElementById('camara-overlay');
 
-    if (!window.ZXingBrowser) {
+    if (!window.BarcodeDetector) {
       reject(new Error('No se pudo cargar el lector de códigos'));
       return;
     }
@@ -340,58 +388,23 @@ function escanearCodigoWeb() {
     overlay.classList.add('abierta');
     video.style.display = 'block';
     rechazarEscaneoWebActual = reject;
-
     contadorEscaneo = 0;
     const contadorElInicial = document.getElementById('camara-count');
     if (contadorElInicial) contadorElInicial.textContent = '0';
 
-    video.addEventListener('loadedmetadata', () => {
-      console.log('Resolución real de la cámara:', video.videoWidth, 'x', video.videoHeight);
+    abrirStreamCamara(video).then(() => {
+      controlesEscaneoWeb = iniciarMotorBarcodeDetector(video, (codigo) => {
+        rechazarEscaneoWebActual = null; // encontramos el código, ya no hace falta poder "cancelar"
+        contadorEscaneo++;
+        const contadorEl = document.getElementById('camara-count');
+        if (contadorEl) contadorEl.textContent = contadorEscaneo;
 
-      const track = video.srcObject && video.srcObject.getVideoTracks()[0];
-      if (track && track.getCapabilities) {
-        const capacidades = track.getCapabilities();
-        console.log('Modos de enfoque soportados:', capacidades.focusMode);
-
-        if (capacidades.focusMode && capacidades.focusMode.includes('continuous')) {
-          track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
-            .then(() => console.log('✅ Enfoque continuo activado'))
-            .catch(err => console.log('❌ No se pudo activar enfoque continuo:', err));
-        } else {
-          console.log('⚠️ Este dispositivo no permite controlar el enfoque desde el navegador');
-        }
-      }
-    }, { once: true });
-
-    const codeReader = new ZXingBrowser.BrowserMultiFormatReader(null, 150);
-
-    codeReader.decodeFromConstraints(
-      {
-        video: {
-          facingMode: 'environment',
-          width:  { min: 640, ideal: 1920 },
-          height: { min: 480, ideal: 1080 }
-        }
-      },
-      video,
-      (resultado, error, controls) => {
-        controlesEscaneoWeb = controls;
-        if (resultado) {
-          rechazarEscaneoWebActual = null; // encontramos el código, ya no hace falta poder "cancelar"
-          contadorEscaneo++;
-          const contadorEl = document.getElementById('camara-count');
-          if (contadorEl) contadorEl.textContent = contadorEscaneo;
-
-          setTimeout(() => {
-            detenerCamaraVisual();
-            resolve(resultado.getText());
-          }, 500);
-
-        } else if (error && error.name !== 'NotFoundException') {
-          console.log('ZXing error:', error.name, error.message);
-        }
-      }
-    ).catch(err => {
+        setTimeout(() => {
+          detenerCamaraVisual();
+          resolve(codigo);
+        }, 500);
+      });
+    }).catch(err => {
       rechazarEscaneoWebActual = null;
       detenerCamaraVisual();
       reject(err);
