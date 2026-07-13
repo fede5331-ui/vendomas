@@ -321,16 +321,21 @@ let rechazarEscaneoWebActual = null;
 function iniciarMotorBarcodeDetector(video, alDetectar) {
   const detector = new BarcodeDetector({ formats: ['ean_13'] });
   let activo = true;
+  let procesando = false;
 
   async function ciclo() {
     if (!activo) return;
-    try {
-      const codigos = await detector.detect(video);
-      if (codigos.length > 0 && activo) {
-        alDetectar(codigos[0].rawValue);
+    if (!procesando) {
+      try {
+        const codigos = await detector.detect(video);
+        if (codigos.length > 0 && activo) {
+          procesando = true;
+          alDetectar(codigos[0].rawValue);
+          setTimeout(() => { procesando = false; }, 1000);
+        }
+      } catch (err) {
+        // Ignoramos errores puntuales de un cuadro individual
       }
-    } catch (err) {
-      // Ignoramos errores puntuales de un cuadro individual
     }
     if (activo) requestAnimationFrame(ciclo);
   }
@@ -411,6 +416,96 @@ function escanearCodigoWeb() {
     });
   });
 }
+
+// Escaneo continuo para la pantalla de Venta: agrega productos al carrito
+// uno tras otro sin cerrar la cámara, hasta que el usuario toque "Listo"
+function iniciarEscaneoContinuoVenta() {
+  const video   = document.getElementById('camara-video');
+  const overlay = document.getElementById('camara-overlay');
+
+  if (!window.BarcodeDetector) {
+    alert('Tu navegador no puede escanear códigos');
+    return;
+  }
+
+  overlay.classList.add('abierta');
+  video.style.display = 'block';
+  contadorEscaneo = 0;
+  document.getElementById('camara-count').textContent = '0';
+
+  // "Listo" cierra todo sin más vueltas (no hace falta rechazar ninguna promesa acá)
+  rechazarEscaneoWebActual = () => {
+    detenerCamaraVisual();
+    renderizarCarrito();
+  };
+
+  abrirStreamCamara(video).then(() => {
+    controlesEscaneoWeb = iniciarMotorBarcodeDetector(video, (codigo) => {
+      manejarCodigoEscaneadoVenta(codigo);
+    });
+  }).catch(err => {
+    detenerCamaraVisual();
+    alert('No se pudo abrir la cámara: ' + err.message);
+  });
+}
+
+
+// Procesa un código detectado durante el escaneo continuo de venta
+function manejarCodigoEscaneadoVenta(codigo) {
+  const codigoPadded = codigo.padStart(13, '0');
+
+  const productoLocal = bd.productos.find(p =>
+    p.codigo === codigo || p.codigo === codigoPadded
+  );
+
+  if (productoLocal) {
+    agregarAlCarrito(productoLocal);
+    reproducirBip();
+    contadorEscaneo++;
+    const contadorEl = document.getElementById('camara-count');
+    if (contadorEl) contadorEl.textContent = contadorEscaneo;
+
+  } else {
+    detenerCamaraVisual();
+
+    const irAStock = confirm(
+      '⚠️ Este producto no está en tu inventario.\n\n' +
+      '¿Querés cargarlo ahora en Stock?'
+    );
+
+    if (irAStock) {
+      abrirNuevoProducto();
+      document.getElementById('prod-codigo').value        = codigo;
+      document.getElementById('prod-nombre').value        = '🔍 Buscando...';
+      document.getElementById('badge-auto').style.display = 'none';
+
+      buscarProductoPorCodigo(codigo).then(encontrado => {
+        if (encontrado && encontrado.nombre) {
+          const nombreCompleto = encontrado.marca
+            ? `${encontrado.marca} - ${encontrado.nombre}`
+            : encontrado.nombre;
+          document.getElementById('prod-nombre').value        = nombreCompleto;
+          document.getElementById('prod-categoria').value     = encontrado.categoria;
+          document.getElementById('badge-auto').style.display = 'block';
+        } else {
+          document.getElementById('prod-nombre').value = '';
+          alert('No se encontró el nombre. Completá manualmente.');
+        }
+      });
+
+      document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
+      document.getElementById('pantalla-stock').classList.add('activa');
+      document.querySelectorAll('.bottom-nav-item').forEach(i => i.classList.remove('activo'));
+      const navStock = document.getElementById('bnav-stock');
+      if (navStock) navStock.classList.add('activo');
+
+    } else {
+      // Si no quiere cargarlo, retomamos el escaneo continuo
+      iniciarEscaneoContinuoVenta();
+    }
+  }
+}
+
 
 // Cierra la cámara del navegador (conecta con los botones "Listo" y "Agregar por nombre" del overlay)
 function cerrarCamara() {
@@ -771,8 +866,9 @@ async function pruebaScanner() {
       codigo = resultado.barcodes[0].rawValue;
 
     } else {
-      // Modo PWA: usamos la cámara del navegador
-      codigo = await escanearCodigoWeb();
+      // Modo PWA: usamos el escaneo continuo (agrega varios productos sin cerrar la cámara)
+      iniciarEscaneoContinuoVenta();
+      return;
     }
 
     const codigoPadded = codigo.padStart(13, '0');
