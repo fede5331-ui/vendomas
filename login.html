@@ -57,9 +57,14 @@
     <div class="logo">Vendo<span>Mas</span></div>
     <p class="subtitulo">App de Gestión para tu Negocio</p>  
 
-    <label>Ingrese su Celular</label>
+    <label>Nombre de la Empresa</label>
+    <input type="text" id="input-negocio"
+      placeholder=""
+      maxlength="40"/>
+
+    <label>Número de Celular</label>    
     <input type="tel" id="input-telefono"
-      placeholder="Ej: 3804887124"
+      placeholder=""  
       maxlength="15"
       inputmode="numeric"/>
 
@@ -97,7 +102,14 @@
 
     async function ingresar() {
       const telefono = document.getElementById('input-telefono').value.trim();
+      const negocio  = document.getElementById('input-negocio').value.trim();
       const errorMsg = document.getElementById('error-msg');
+
+      if (!negocio) {
+        errorMsg.style.display = 'block';
+        errorMsg.textContent = 'Ingresá el nombre de tu negocio';
+        return;
+      }
 
       if (!telefono || telefono.length < 6) {
         errorMsg.style.display = 'block';
@@ -188,7 +200,7 @@
                 telefono: telefono,
                 marca: 'PWA',
                 modelo: navigator.userAgent.slice(0, 80),
-                negocio: 'VendoMas',
+                negocio: negocio,
                 bloqueado: false,
                 fecha_registro: new Date().toISOString(),
                 ultimo_acceso: new Date().toISOString()
@@ -210,11 +222,11 @@
         localStorage.setItem('vendomas_pwa_sesion', JSON.stringify({
           telefono: telefono,
           uuid: uuidPwa,
+          nombreNegocio: negocio,
           suscripcion: (data && data.length > 0) ? data[0].suscripcion : 'prueba',
           diasRestantes: diasRestantesGuardar,
           timestamp: Date.now()
         }));
-
         localStorage.setItem('vendomas_telefono', telefono);
 
         // Vamos a la app

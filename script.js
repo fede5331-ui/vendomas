@@ -192,6 +192,15 @@ function conectarComercioId(uuidPwa) {
     bd.configuracion.comercioId = uuidPwa;
     guardarBaseDeDatos();
   }
+
+  // Tomamos el nombre del negocio guardado en la sesión de la PWA
+  const sesion = JSON.parse(localStorage.getItem('vendomas_pwa_sesion') || '{}');
+  if (sesion.nombreNegocio && bd.configuracion.nombreNegocio !== sesion.nombreNegocio) {
+    bd.configuracion.nombreNegocio = sesion.nombreNegocio;
+    guardarBaseDeDatos();
+    const topbar = document.getElementById('topbar-titulo');
+    if (topbar) topbar.textContent = sesion.nombreNegocio;
+  }
 }
 
 
