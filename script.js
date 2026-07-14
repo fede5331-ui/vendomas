@@ -2238,7 +2238,7 @@ function cargarAjustes() {
 }
 
 function contactarSoporte() {
-  const numero  = WHATSAPP_SOPORTE; // ya está definido en línea 11: '5491130960864'
+  const numero  = WHATSAPP_SOPORTE; // ya está definido en línea 11: '5493804887124'
   const negocio = bd.configuracion.nombreNegocio || 'VendoMas';
   const mensaje = encodeURIComponent(`Hola! Te escribo desde la app VendoMas. Mi negocio es: ${negocio}`);
   const url     = `https://wa.me/${numero}?text=${mensaje}`;
