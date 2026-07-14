@@ -53,7 +53,9 @@ async function verificarLicenciaV3() {
         }
 
         if (registro.suscripcion === 'pago') {
+          conectarComercioId(sesion.uuid);
           document.getElementById('app').style.display = 'flex';
+          restaurarDatosSiHaceFalta();
           return;
         }
 
@@ -75,6 +77,7 @@ async function verificarLicenciaV3() {
           timestamp:     Date.now()
         }));
 
+        conectarComercioId(sesion.uuid);
         abrirAplicacionNormal(diasRestantes);
 
       } catch (err) {
@@ -181,6 +184,16 @@ function verificarLicenciaOffline() {
    Caso de uso: comerciante perdió o cambió de celular,
    y vos reasignaste manualmente sus datos viejos al UUID nuevo.
    ================================================ */
+
+// Conecta el UUID de la PWA con comercioId, para que la sincronización con Supabase funcione
+function conectarComercioId(uuidPwa) {
+  if (!uuidPwa) return;
+  if (bd.configuracion.comercioId !== uuidPwa) {
+    bd.configuracion.comercioId = uuidPwa;
+    guardarBaseDeDatos();
+  }
+}
+
 
 async function restaurarDatosSiHaceFalta() {
   const comercioId = bd.configuracion.comercioId;
