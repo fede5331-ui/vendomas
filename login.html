@@ -55,7 +55,7 @@
 <body>
   <div class="card">
     <div class="logo">Vendo<span>Mas</span></div>
-    <p class="subtitulo">App de Gestión para tu Negocio</p>  
+    <p class="subtitulo">App de Gestión para tu Empresa</p>  
 
     <label>Nombre de la Empresa</label>
     <input type="text" id="input-negocio"
@@ -68,7 +68,7 @@
       maxlength="15"
       inputmode="numeric"/>
 
-    <button onclick="ingresar()">Ingresar →</button>
+    <button onclick="ingresar()">Ingresar</button>
     <p class="error" id="error-msg">Ingresá tu número de celular</p>  
   </div>
 
@@ -107,7 +107,7 @@
 
       if (!negocio) {
         errorMsg.style.display = 'block';
-        errorMsg.textContent = 'Ingresá el nombre de tu negocio';
+        errorMsg.textContent = 'Ingresá el nombre de tu empresa';
         return;
       }
 
