@@ -115,7 +115,7 @@
 
         // Buscamos si el teléfono ya existe en Supabase
         const r = await fetch(
-          `${SUPABASE_URL}/rest/v1/dispositivos?telefono=eq.${encodeURIComponent(telefono)}&select=id,uuid_pwa,bloqueado`,
+          `${SUPABASE_URL}/rest/v1/dispositivos?telefono=eq.${encodeURIComponent(telefono)}&select=id,uuid_pwa,bloqueado,suscripcion,dias_prueba,fecha_registro`,
           {
             headers: {
               'apikey': SUPABASE_KEY,
@@ -132,6 +132,19 @@
           if (registro.bloqueado === true) {
             mostrarBloqueo('Tu acceso fue bloqueado. Contactá a soporte.');
             return;
+          }
+
+          // Verificamos si la prueba gratuita venció
+          if (registro.suscripcion === 'prueba') {
+            const fechaRegistro   = new Date(registro.fecha_registro);
+            const ahora            = new Date();
+            const diasTranscurridos = Math.floor((ahora - fechaRegistro) / (1000 * 60 * 60 * 24));
+            const diasRestantes     = registro.dias_prueba - diasTranscurridos;
+
+            if (diasRestantes <= 0) {
+              mostrarBloqueo('Tu período de prueba gratuita venció. Contactá a soporte para activar tu cuenta.');
+              return;
+            }
           }
 
           // Si tiene uuid_pwa y no coincide con el actual → posible uso en otro dispositivo
@@ -184,12 +197,24 @@
           );
         }
 
+        // Calculamos los días restantes para guardarlos en la sesión
+        let diasRestantesGuardar = null;
+        if (data && data.length > 0 && data[0].suscripcion === 'prueba') {
+          const fechaRegistro     = new Date(data[0].fecha_registro);
+          const ahora              = new Date();
+          const diasTranscurridos  = Math.floor((ahora - fechaRegistro) / (1000 * 60 * 60 * 24));
+          diasRestantesGuardar     = data[0].dias_prueba - diasTranscurridos;
+        }
+
         // Guardamos sesión localmente
         localStorage.setItem('vendomas_pwa_sesion', JSON.stringify({
           telefono: telefono,
           uuid: uuidPwa,
+          suscripcion: (data && data.length > 0) ? data[0].suscripcion : 'prueba',
+          diasRestantes: diasRestantesGuardar,
           timestamp: Date.now()
         }));
+        
         localStorage.setItem('vendomas_telefono', telefono);
 
         // Vamos a la app

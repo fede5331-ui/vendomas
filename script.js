@@ -23,13 +23,22 @@ const CLAVE_LICENCIA_CACHE = 'gestion_licencia_v3';
 
 // Función principal que corre al arrancar la app
 async function verificarLicenciaV3() {
-  // PWA: si no hay Capacitor, abrimos la app directamente
-  if (!window.Capacitor) {
-    abrirAplicacionNormal();
-    return;
-  }
-
   try {
+    // PWA: si no hay Capacitor, leemos los días de prueba de la sesión guardada
+    if (!window.Capacitor) {
+      const sesion = JSON.parse(localStorage.getItem('vendomas_pwa_sesion') || '{}');
+
+      if (sesion.suscripcion === 'pago') {
+        document.getElementById('app').style.display = 'flex';
+      } else {
+        const dias = (sesion.diasRestantes !== null && sesion.diasRestantes !== undefined)
+          ? sesion.diasRestantes
+          : 15;
+        abrirAplicacionNormal(dias);
+      }
+      return;
+    }
+
     const { Device } = Capacitor.Plugins;
 
     const idInfo      = await Device.getId();
