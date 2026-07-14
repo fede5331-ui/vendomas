@@ -24,17 +24,68 @@ const CLAVE_LICENCIA_CACHE = 'gestion_licencia_v3';
 // Función principal que corre al arrancar la app
 async function verificarLicenciaV3() {
   try {
-    // PWA: si no hay Capacitor, leemos los días de prueba de la sesión guardada
+    // PWA: re-chequeamos contra Supabase en cada apertura (sesión silenciosa)
     if (!window.Capacitor) {
       const sesion = JSON.parse(localStorage.getItem('vendomas_pwa_sesion') || '{}');
 
-      if (sesion.suscripcion === 'pago') {
-        document.getElementById('app').style.display = 'flex';
-      } else {
-        const dias = (sesion.diasRestantes !== null && sesion.diasRestantes !== undefined)
-          ? sesion.diasRestantes
-          : 15;
-        abrirAplicacionNormal(dias);
+      if (!sesion.telefono) {
+        // No hay sesión válida — no debería pasar, pero por las dudas no mostramos nada
+        return;
+      }
+
+      try {
+        const r = await fetch(
+          `${SUPABASE_URL}/rest/v1/dispositivos?telefono=eq.${encodeURIComponent(sesion.telefono)}&select=bloqueado,suscripcion,dias_prueba,fecha_registro`,
+          { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+        );
+        const data = await r.json();
+
+        if (!data || data.length === 0) {
+          mostrarPantallaBloqueo('bloqueado');
+          return;
+        }
+
+        const registro = data[0];
+
+        if (registro.bloqueado === true) {
+          mostrarPantallaBloqueo('bloqueado');
+          return;
+        }
+
+        if (registro.suscripcion === 'pago') {
+          document.getElementById('app').style.display = 'flex';
+          return;
+        }
+
+        const fechaRegistro     = new Date(registro.fecha_registro);
+        const ahora              = new Date();
+        const diasTranscurridos  = Math.floor((ahora - fechaRegistro) / (1000 * 60 * 60 * 24));
+        const diasRestantes      = registro.dias_prueba - diasTranscurridos;
+
+        if (diasRestantes <= 0) {
+          mostrarPantallaBloqueo('vencido');
+          return;
+        }
+
+        // Actualizamos la sesión guardada con los datos frescos
+        localStorage.setItem('vendomas_pwa_sesion', JSON.stringify({
+          ...sesion,
+          suscripcion:   registro.suscripcion,
+          diasRestantes: diasRestantes,
+          timestamp:     Date.now()
+        }));
+
+        abrirAplicacionNormal(diasRestantes);
+
+      } catch (err) {
+        // Sin internet: usamos los últimos datos guardados, sin bloquear
+        console.error('No se pudo re-chequear (sin conexión), usando datos guardados:', err);
+        if (sesion.suscripcion === 'pago') {
+          document.getElementById('app').style.display = 'flex';
+        } else {
+          const dias = (sesion.diasRestantes !== null && sesion.diasRestantes !== undefined) ? sesion.diasRestantes : 15;
+          abrirAplicacionNormal(dias);
+        }
       }
       return;
     }
