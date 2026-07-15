@@ -1056,15 +1056,18 @@ function renderizarCarrito() {
   const lista       = document.getElementById('carrito-lista');
   const contador    = document.getElementById('carrito-contador');
   const totalMonto  = document.getElementById('total-monto');
+  const bottomNav   = document.querySelector('.bottom-nav');
 
   if (carritoActual.length === 0) {
     contenedor.classList.remove('visible');
     zonaEscaneo.classList.remove('mini');
+    if (bottomNav) bottomNav.style.display = 'flex';
     return;
   }
 
   contenedor.classList.add('visible');
   zonaEscaneo.classList.add('mini');
+  if (bottomNav) bottomNav.style.display = 'none';
 
   const totalItems = carritoActual.reduce((suma, item) => suma + item.cantidad, 0);
   const totalPesos = carritoActual.reduce((suma, item) => suma + item.precio * item.cantidad, 0);
