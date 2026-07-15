@@ -1951,26 +1951,10 @@ function cargarResumenes(periodo, pestana) {
   });
 
   // Tarjeta principal + mini KPIs
+  // Solo el total simple, estilo carpeta
   document.getElementById('grilla-kpi').innerHTML = `
-    <p style="font-size:12px;color:var(--texto-secundario);margin:0 0 4px;text-transform:capitalize">${fechaHoy}</p>
-    <p class="titulo-pantalla" style="margin-bottom:14px">Resumen del día</p>
-
-    <div class="dashboard-card-principal">
-      <p class="dashboard-label">Total vendido</p>
-      <p class="dashboard-monto">${formatearMonto(totalFacturado)}</p>
-      <p class="dashboard-sub">${totalVentas} venta${totalVentas !== 1 ? 's' : ''} realizadas</p>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-  <div class="dashboard-mini-card">
-    <p class="dashboard-label">Ganancia est.</p>
-    <p class="dashboard-valor" style="color:var(--verde);font-size:18px">${formatearMonto(gananciaEstimada)}</p>
-  </div>
-  <div class="dashboard-mini-card">
-    <p class="dashboard-label">Ticket prom.</p>
-    <p class="dashboard-valor" style="font-size:18px">${formatearMonto(ticketPromedio)}</p>
-  </div>
-</div>
+    <p style="font-size:12px;color:#888;margin:0 0 4px;font-weight:500">Total vendido</p>
+    <p style="font-size:36px;font-weight:400;color:#1a1a1a;margin:0;letter-spacing:-0.3px">${formatearMonto(totalFacturado)}</p>
   `;
 
   // Más vendidos
