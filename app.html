@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>VendoMas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
@@ -119,16 +120,34 @@
        PANTALLA: RESÚMENES / DASHBOARD
        ================================================ -->
   <div class="pantalla activa" id="pantalla-resumenes">
-    <div class="pestanas">
-      <div class="pestana activa" onclick="cargarResumenes('hoy', this)">Hoy</div>
-      <div class="pestana" onclick="cargarResumenes('semana', this)">Semana</div>
-      <div class="pestana" onclick="cargarResumenes('mes', this)">Mes</div>
-      <div class="pestana" onclick="cargarResumenes('todo', this)">Todo</div>
-    </div>
-    <div class="grilla-kpi" id="grilla-kpi"></div>
-    <div id="mas-vendidos"></div>
-    <div id="por-pago"></div>
+  <div class="pestanas-carpeta">
+    <div class="pestana-carpeta activa" onclick="cargarResumenes('hoy', this)">Hoy</div>
+    <div class="pestana-carpeta" onclick="cargarResumenes('semana', this)">Semana</div>
+    <div class="pestana-carpeta" onclick="cargarResumenes('mes', this)">Mes</div>
+    <div class="pestana-carpeta" onclick="cargarResumenes('todo', this)">Todo</div>
   </div>
+
+  <div class="card-carpeta">
+    <div class="grilla-kpi" id="grilla-kpi"></div>
+
+    <div class="botones-inicio">
+      <button class="btn-inicio" onclick="irA('stock', document.getElementById('bnav-stock'))">
+        <svg width="24" height="24" viewBox="0 -960 960 960" fill="#27ae60"><path d="M440-183v-274L200-596v274l240 139Zm80 0 240-139v-274L520-457v274Zm-80 92L160-252q-19-11-29.5-29T120-321v-318q0-22 10.5-40t29.5-29l280-161q19-11 40-11t40 11l280 161q19 11 29.5 29t10.5 40v318q0 22-10.5 40T800-252L520-91q-19 11-40 11t-40-11Zm200-528 77-44-237-137-78 45 238 136Zm-160 93 78-45-237-137-78 45 237 137Z"/></svg>
+        <span>Stock</span>
+      </button>
+
+      <button class="btn-inicio" onclick="pruebaScanner()">
+        <svg width="24" height="24" viewBox="0 -960 960 960" fill="#27ae60"><path d="M40-120v-200h80v120h120v80H40Zm680 0v-80h120v-120h80v200H720ZM160-240v-480h80v480h-80Zm120 0v-480h40v480h-40Zm120 0v-480h80v480h-80Zm120 0v-480h120v480H520Zm160 0v-480h40v480h-40Zm80 0v-480h40v480h-40ZM40-640v-200h200v80H120v120H40Zm800 0v-120H720v-80h200v200h-80Z"/></svg>
+        <span>Vender</span>
+      </button>
+
+      <button class="btn-inicio" onclick="irA('detalleResumen', null)">
+        <svg width="24" height="24" viewBox="0 -960 960 960" fill="#27ae60"><path d="M240-200h120v-240h240v240h120v-360L480-740 240-560v360Zm-80 80v-480l320-240 320 240v480H520v-240h-80v240H160Zm320-350Z"/></svg>
+        <span>Resumen</span>
+      </button>
+    </div>
+  </div>
+</div>
 
   <!-- ================================================
        PANTALLA: CLIENTES
