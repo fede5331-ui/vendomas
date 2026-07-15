@@ -845,6 +845,7 @@ function mostrarFlashCamara() {
    ================================================ */
 
 function irA(pantalla, botonNav) {
+  if (!navegandoPorHistorial) pushEstado(pantalla);
   cerrarMenuMas();
   document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
   document.getElementById('pantalla-' + pantalla).classList.add('activa');
@@ -873,6 +874,7 @@ function irA(pantalla, botonNav) {
    Clientes, Fiado y Ajustes.
    ------------------------------------------------ */
 function abrirMenuMas() {
+  pushEstado('menu');
   document.getElementById('mas-overlay').classList.add('abierto');
 }
 
@@ -1157,6 +1159,7 @@ function seleccionarPago(tipo) {
 
 // Abre la pantalla de pesada para un producto que se vende por kg
 function abrirPantallaPesada(producto) {
+  pushEstado('pesada');
   productoPesandoActual = producto;
   gramosActual = '';
 
@@ -1395,6 +1398,7 @@ function confirmarCobro() {
    ================================================ */
 
 function abrirBusqueda() {
+  pushEstado('form');
   document.getElementById('busqueda-overlay').classList.add('abierta');
   filtrarBusqueda('');
   setTimeout(() => document.getElementById('busqueda-input').focus(), 100);
@@ -1552,6 +1556,7 @@ function cambiarFiltroStock(filtro, pestana) {
 }
 
 function abrirNuevoProducto() {
+  pushEstado('form');
   productoEditandoId = null;
 
   document.getElementById('form-prod-titulo').textContent   = 'Agregar producto';
@@ -1634,6 +1639,7 @@ function confirmarStockManual(valor) {
 }
 
 function editarProducto(id) {
+  pushEstado('form')
   const producto = bd.productos.find(p => p.id === id);
   if (!producto) return;
 
@@ -2077,6 +2083,7 @@ function eliminarCliente(id) {
 }
 
 function abrirNuevoCliente() {
+  pushEstado('form');
   document.getElementById('cliente-nombre').value = '';
   document.getElementById('cliente-tel').value    = '';
   document.getElementById('cliente-nota').value   = '';
@@ -2272,6 +2279,7 @@ function contactarSoporte() {
    ================================================ */
 
 function abrirModal(id) {
+  pushEstado('modal');
   document.getElementById(id).classList.add('abierto');
 }
 
@@ -2296,6 +2304,7 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 let tipoAjuste = 'subir';
 
 function abrirActualizarPrecios() {
+  pushEstado('form');
   const marcas = [...new Set(bd.productos
     .map(p => p.nombre.split(' ')[0])
     .filter(Boolean)
@@ -2450,12 +2459,16 @@ function inicializar() {
   renderizarCarrito();
   cargarResumenes('hoy');
 
-  // Ocultamos la app mientras verificamos la licencia
   document.getElementById('app').style.display = 'none';
   setTimeout(verificarLicenciaV3, 1000);
+
+  pushEstado('inicio');
 }
 
+let navegandoPorHistorial = false;
+
 function pushEstado(nombre) {
+  if (window.Capacitor) return; // Capacitor maneja su propio botón atrás
   history.pushState({ pantalla: nombre }, '', '');
 }
 
@@ -2469,47 +2482,118 @@ if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App
 
   App.addListener('backButton', ({ canGoBack }) => {
 
-    // 1. Cerrar modal abierto
     const modalAbierto = document.querySelector('.modal-overlay.abierto');
     if (modalAbierto) {
       modalAbierto.classList.remove('abierto');
       return;
     }
 
-    // 2. Cerrar menú Más
     const masOverlay = document.getElementById('mas-overlay');
     if (masOverlay && masOverlay.classList.contains('abierto')) {
       cerrarMenuMas();
       return;
     }
 
-    // 3. Cerrar formulario overlay (agregar/editar producto, actualizar precios, nuevo client)
     const formAbierto = document.querySelector('.formulario-overlay.abierto');
     if (formAbierto) {
-    formAbierto.classList.remove('abierto');
-    // Nos aseguramos que la bottom nav vuelva a ser visible
-    const bottomNav = document.querySelector('.bottom-nav');
-    if (bottomNav) bottomNav.style.display = 'flex';
-    return;
+      formAbierto.classList.remove('abierto');
+      const bottomNav = document.querySelector('.bottom-nav');
+      if (bottomNav) bottomNav.style.display = 'flex';
+      return;
     }
 
-    // 4. Cerrar búsqueda
     const busquedaAbierta = document.getElementById('busqueda-overlay');
     if (busquedaAbierta && busquedaAbierta.classList.contains('abierta')) {
       cerrarBusqueda();
       return;
     }
 
-    // 5. Si no estamos en Inicio, volvemos a Inicio
     const pantallaActual = document.querySelector('.pantalla.activa');
     if (pantallaActual && pantallaActual.id !== 'pantalla-resumenes') {
       irA('resumenes', document.getElementById('bnav-resumenes'));
       return;
     }
 
-    // 6. Ya estamos en Inicio → salir de la app
     App.exitApp();
   });
 }
 
+/* ================================================
+   BOTÓN ATRÁS (PWA - NAVEGADOR)
+   Usa el historial del navegador. Cada vez que se
+   abre algo se empuja un estado; al presionar atrás
+   el navegador dispara "popstate" y acá decidimos
+   qué cerrar antes de salir de la PWA.
+   ================================================ */
+
+window.addEventListener('popstate', function () {
+  if (window.Capacitor) return;
+
+  // 1. Cerrar modal abierto (cobro, pago fiado)
+  const modalAbierto = document.querySelector('.modal-overlay.abierto');
+  if (modalAbierto) {
+    modalAbierto.classList.remove('abierto');
+    return;
+  }
+
+  // 2. Cerrar menú Más
+  const masOverlay = document.getElementById('mas-overlay');
+  if (masOverlay && masOverlay.classList.contains('abierto')) {
+    cerrarMenuMas();
+    return;
+  }
+
+  // 3. Cerrar formulario overlay (nuevo producto, cliente, actualizar precios)
+  const formAbierto = document.querySelector('.formulario-overlay.abierto');
+  if (formAbierto) {
+    formAbierto.classList.remove('abierto');
+    const bottomNav = document.querySelector('.bottom-nav');
+    if (bottomNav) bottomNav.style.display = 'flex';
+    return;
+  }
+
+  // 4. Cerrar pantalla de pesada
+  const pesada = document.getElementById('pantalla-pesada');
+  if (pesada && pesada.classList.contains('abierto')) {
+    cerrarPantallaPesada();
+    return;
+  }
+
+  // 5. Cerrar pantalla de confirmación de venta
+  const confirmacionVenta = document.getElementById('pantalla-confirmacion-venta');
+  if (confirmacionVenta && confirmacionVenta.classList.contains('abierta')) {
+    cerrarConfirmacionVenta();
+    return;
+  }
+
+  // 6. Cerrar búsqueda por nombre
+  const busquedaAbierta = document.getElementById('busqueda-overlay');
+  if (busquedaAbierta && busquedaAbierta.classList.contains('abierta')) {
+    cerrarBusqueda();
+    return;
+  }
+
+  // 7. Cerrar cámara de escaneo (PWA)
+  const camaraOverlay = document.getElementById('camara-overlay');
+  if (camaraOverlay && camaraOverlay.classList.contains('abierta')) {
+    cerrarCamara();
+    return;
+  }
+
+  // 8. Si no estamos en Inicio, volvemos a Inicio y reponemos un estado
+  //    para que quede un "atrás" más antes de salir de la PWA
+  const pantallaActual = document.querySelector('.pantalla.activa');
+  if (pantallaActual && pantallaActual.id !== 'pantalla-resumenes') {
+    navegandoPorHistorial = true;
+    irA('resumenes', document.getElementById('bnav-resumenes'));
+    navegandoPorHistorial = false;
+    pushEstado('inicio');
+    return;
+  }
+
+  // 9. Ya estamos en Inicio: dejamos que el navegador salga de la PWA
+});
+
 window.addEventListener('load', inicializar);
+
+
