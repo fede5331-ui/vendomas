@@ -1942,7 +1942,7 @@ function cargarResumenes(periodo, pestana) {
   // Solo el total simple, estilo carpeta
   document.getElementById('grilla-kpi').innerHTML = `
     <p style="font-size:12px;color:#888;margin:0 0 4px;font-weight:500">Total vendido</p>
-    <p style="font-size:36px;font-weight:400;color:#1a1a1a;margin:0;letter-spacing:-0.3px">${formatearMonto(totalFacturado)}</p>
+    <p style="font-size:28px;font-weight:400;color:#1a1a1a;margin:0;letter-spacing:-0.3px">${formatearMonto(totalFacturado)}</p>
   `;
 }
 
