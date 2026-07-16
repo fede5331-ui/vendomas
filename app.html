@@ -149,6 +149,27 @@
   </div>
 </div>
 
+<!-- ================================================
+       PANTALLA: DETALLE DE RESUMEN
+       ================================================ -->
+  <div class="pantalla" id="pantalla-detalleResumen">
+    <div class="formulario-header" style="margin:-16px -16px 16px -16px">
+      <span class="btn-volver" onclick="irA('resumenes', document.getElementById('bnav-resumenes'))">←</span>
+      <span class="formulario-titulo">Detalle del resumen</span>
+    </div>
+
+    <div class="pestanas">
+      <div class="pestana activa" onclick="cargarDetalleResumen('hoy', this)">Hoy</div>
+      <div class="pestana" onclick="cargarDetalleResumen('semana', this)">Semana</div>
+      <div class="pestana" onclick="cargarDetalleResumen('mes', this)">Mes</div>
+      <div class="pestana" onclick="cargarDetalleResumen('todo', this)">Todo</div>
+    </div>
+
+    <div class="grilla-kpi" id="grilla-kpi-detalle"></div>
+    <div id="mas-vendidos"></div>
+    <div id="por-pago"></div>
+  </div>
+
   <!-- ================================================
        PANTALLA: CLIENTES
        ================================================ -->

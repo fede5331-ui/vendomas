@@ -863,6 +863,7 @@ function irA(pantalla, botonNav) {
           }
   if (pantalla === 'historial') renderizarHistorial('hoy');
   if (pantalla === 'resumenes') cargarResumenes('hoy');
+  if (pantalla === 'detalleResumen') cargarDetalleResumen('hoy');
   if (pantalla === 'clientes')  renderizarClientes();
   if (pantalla === 'fiado')     renderizarFiado();
   if (pantalla === 'ajustes')   cargarAjustes();
@@ -1936,6 +1937,30 @@ function cargarResumenes(periodo, pestana) {
     return true;
   });
 
+  const totalFacturado = ventas.reduce((s, v) => s + v.total, 0);
+
+  // Solo el total simple, estilo carpeta
+  document.getElementById('grilla-kpi').innerHTML = `
+    <p style="font-size:12px;color:#888;margin:0 0 4px;font-weight:500">Total vendido</p>
+    <p style="font-size:36px;font-weight:400;color:#1a1a1a;margin:0;letter-spacing:-0.3px">${formatearMonto(totalFacturado)}</p>
+  `;
+}
+
+function cargarDetalleResumen(periodo, pestana) {
+  if (pestana) {
+    document.querySelectorAll('#pantalla-detalleResumen .pestana').forEach(p => p.classList.remove('activa'));
+    pestana.classList.add('activa');
+  }
+
+  const ahora = new Date();
+  const ventas = bd.ventas.filter(v => {
+    const fecha = new Date(v.fecha);
+    if (periodo === 'hoy')    return fecha.toDateString() === ahora.toDateString();
+    if (periodo === 'semana') { const l = new Date(ahora); l.setDate(ahora.getDate()-7); return fecha >= l; }
+    if (periodo === 'mes')    return fecha.getMonth() === ahora.getMonth() && fecha.getFullYear() === ahora.getFullYear();
+    return true;
+  });
+
   const totalVentas      = ventas.length;
   const totalFacturado   = ventas.reduce((s, v) => s + v.total, 0);
   const ticketPromedio   = totalVentas > 0 ? totalFacturado / totalVentas : 0;
@@ -1950,11 +1975,26 @@ function cargarResumenes(periodo, pestana) {
     weekday: 'long', day: 'numeric', month: 'short'
   });
 
-  // Tarjeta principal + mini KPIs
-  // Solo el total simple, estilo carpeta
-  document.getElementById('grilla-kpi').innerHTML = `
-    <p style="font-size:12px;color:#888;margin:0 0 4px;font-weight:500">Total vendido</p>
-    <p style="font-size:36px;font-weight:400;color:#1a1a1a;margin:0;letter-spacing:-0.3px">${formatearMonto(totalFacturado)}</p>
+  document.getElementById('grilla-kpi-detalle').innerHTML = `
+    <p style="font-size:12px;color:var(--texto-secundario);margin:0 0 4px;text-transform:capitalize">${fechaHoy}</p>
+    <p class="titulo-pantalla" style="margin-bottom:14px">Resumen del período</p>
+
+    <div class="dashboard-card-principal">
+      <p class="dashboard-label">Total vendido</p>
+      <p class="dashboard-monto">${formatearMonto(totalFacturado)}</p>
+      <p class="dashboard-sub">${totalVentas} venta${totalVentas !== 1 ? 's' : ''} realizadas</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div class="dashboard-mini-card">
+        <p class="dashboard-label">Ganancia est.</p>
+        <p class="dashboard-valor" style="color:var(--verde);font-size:18px">${formatearMonto(gananciaEstimada)}</p>
+      </div>
+      <div class="dashboard-mini-card">
+        <p class="dashboard-label">Ticket prom.</p>
+        <p class="dashboard-valor" style="font-size:18px">${formatearMonto(ticketPromedio)}</p>
+      </div>
+    </div>
   `;
 
   // Más vendidos
