@@ -15,6 +15,17 @@ const STOCK_MINIMO_DEFAULT = 5;
 const SUPABASE_URL = 'https://hscvjeyepeogpaqtutni.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzY3ZqZXllcGVvZ3BhcXR1dG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExOTM3MjEsImV4cCI6MjA5Njc2OTcyMX0.rzAg-BGMZAhCYASzWzIdrXDGfk0Yd5_kgE9Sv0STNwg';
 
+// ── Instalación de la PWA ("Descargar app") ──────
+// Chrome/Android disparan este evento cuando la página cumple los
+// requisitos para instalarse. Lo guardamos para poder mostrar el
+// instalador nativo recién cuando el usuario toca el botón "Android".
+let eventoInstalacionPwa = null;
+
+window.addEventListener('beforeinstallprompt', (evento) => {
+  evento.preventDefault();
+  eventoInstalacionPwa = evento;
+});
+
 /* ================================================
    SISTEMA DE LICENCIAS V3 — SUPABASE
    ================================================ */
@@ -881,6 +892,65 @@ function abrirMenuMas() {
 
 function cerrarMenuMas() {
   document.getElementById('mas-overlay').classList.remove('abierto');
+}
+
+/* ================================================
+   DESCARGAR APP (instalar la PWA en el celular)
+   ================================================ */
+
+function abrirDescargaApp() {
+  pushEstado('form');
+  document.getElementById('instrucciones-ios').style.display = 'none';
+  document.getElementById('mensaje-descarga').style.display  = 'none';
+  document.getElementById('form-descarga-app').classList.add('abierto');
+  const bottomNav = document.querySelector('.bottom-nav');
+  if (bottomNav) bottomNav.style.display = 'none';
+}
+
+function cerrarDescargaApp() {
+  document.getElementById('form-descarga-app').classList.remove('abierto');
+  const bottomNav = document.querySelector('.bottom-nav');
+  if (bottomNav) bottomNav.style.display = 'flex';
+}
+
+// La PWA ya está instalada si se está ejecutando en modo standalone
+function pwaYaInstalada() {
+  return window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+}
+
+async function descargarApp(sistema) {
+  const mensaje         = document.getElementById('mensaje-descarga');
+  const instruccionesIos = document.getElementById('instrucciones-ios');
+
+  mensaje.style.display          = 'none';
+  instruccionesIos.style.display = 'none';
+
+  if (pwaYaInstalada()) {
+    mensaje.textContent   = '✅ VendoMas ya está instalada en este celular.';
+    mensaje.style.display = 'block';
+    return;
+  }
+
+  if (sistema === 'iphone') {
+    // Safari en iOS no permite instalar con un solo toque: mostramos los pasos
+    instruccionesIos.style.display = 'block';
+    return;
+  }
+
+  // Android / Chrome: si el navegador ya nos dio el evento, mostramos
+  // el instalador nativo (igual que "Agregar a pantalla de inicio")
+  if (eventoInstalacionPwa) {
+    eventoInstalacionPwa.prompt();
+    const resultado = await eventoInstalacionPwa.userChoice;
+    eventoInstalacionPwa = null;
+    if (resultado.outcome === 'accepted') {
+      cerrarDescargaApp();
+    }
+  } else {
+    mensaje.textContent = 'Para instalarla, abrí esta página con Chrome en tu Android. Si ya la tenés instalada, buscá el ícono de VendoMas en tu pantalla de inicio.';
+    mensaje.style.display = 'block';
+  }
 }
 
 

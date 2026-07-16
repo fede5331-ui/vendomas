@@ -1053,6 +1053,50 @@ body.escaneando .app {
 
 .formulario-cuerpo::-webkit-scrollbar { display: none; }
 
+/* ------------------------------------------------
+   OVERLAY: DESCARGAR APP (Android / iPhone)
+   ------------------------------------------------ */
+.grilla-descarga-app {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.btn-descarga-os {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 22px 8px;
+  border-radius: 16px;
+  border: 1.5px solid var(--borde);
+  background: var(--fondo-secundario);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--texto);
+  font-family: Arial, sans-serif;
+}
+
+.btn-descarga-os:active {
+  border-color: #27ae60;
+  background: rgba(39, 174, 96, 0.08);
+}
+
+.btn-descarga-iconos {
+  position: relative;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.btn-descarga-badge {
+  position: absolute;
+  bottom: -6px;
+  right: -12px;
+  font-size: 16px;
+}
+
 /* Botón para escanear desde el formulario de stock */
 .btn-escanear-stock {
   width: 100%;
