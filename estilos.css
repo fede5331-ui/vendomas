@@ -1063,6 +1063,19 @@ body.escaneando .app {
   color: #1a1a1a;
 }
 
+/* Headers de "Actualizar precios por marca" y "Agregar producto": verde clarito */
+#form-actualizar-precios .formulario-header,
+#form-nuevo-producto .formulario-header {
+  background: #e8f8ee;
+}
+
+#form-actualizar-precios .formulario-titulo,
+#form-actualizar-precios .btn-volver,
+#form-nuevo-producto .formulario-titulo,
+#form-nuevo-producto .btn-volver {
+  color: #1a1a1a;
+}
+
 .formulario-cuerpo {
   flex: 1;
   overflow-y: auto;
