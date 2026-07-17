@@ -1043,6 +1043,16 @@ body.escaneando .app {
   color: #ffffff;
 }
 
+/* Header de "Descargar app": va en verde clarito, igual que el topbar */
+#form-descarga-app .formulario-header {
+  background: #e8f8ee;
+}
+
+#form-descarga-app .formulario-titulo,
+#form-descarga-app .btn-volver {
+  color: #1a1a1a;
+}
+
 .formulario-cuerpo {
   flex: 1;
   overflow-y: auto;
