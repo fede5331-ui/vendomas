@@ -321,7 +321,7 @@ function mostrarChipPrueba(dias) {
     chip.id = 'chip-prueba-topbar';
     chip.style.cssText = `
       font-size: 10px;
-      color: rgba(255,255,255,0.55);
+      color: rgba(26,26,26,0.55);
       text-align: center;
       padding-bottom: 2px;
       letter-spacing: 0.3px;
