@@ -929,14 +929,19 @@ body.escaneando .app {
 
 /* Botón de agregar manualmente: siempre sobre negro */
 .btn-manual-camara {
-  background: none;
-  border: none;
-  color: #5b9bd5;
-  font-size: 12px;
-  text-decoration: underline;
+  margin-top: 6px;
+  padding: 10px 22px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
-  padding: 0;
 }
+
+.btn-manual-camara:active { background: rgba(255, 255, 255, 0.16); }
 
 
 /* ------------------------------------------------
