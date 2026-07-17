@@ -521,6 +521,11 @@ function iniciarEscaneoContinuoVenta() {
     return;
   }
 
+  // Nos aseguramos de estar en la pantalla de Venta antes de abrir la
+  // cámara, así al cerrarla ("Listo") se ve el carrito y no la pantalla
+  // desde la que se disparó el escaneo (ej: el botón "Vender" de Inicio)
+  irA('venta', document.getElementById('bnav-venta'));
+
   overlay.classList.add('abierta');
   video.style.display = 'block';
   contadorEscaneo = 0;

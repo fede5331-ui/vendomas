@@ -1053,6 +1053,16 @@ body.escaneando .app {
   color: #1a1a1a;
 }
 
+/* Header de "Detalle del resumen": va en verde clarito, igual que el topbar */
+#pantalla-detalleResumen .formulario-header {
+  background: #e8f8ee;
+}
+
+#pantalla-detalleResumen .formulario-titulo,
+#pantalla-detalleResumen .btn-volver {
+  color: #1a1a1a;
+}
+
 .formulario-cuerpo {
   flex: 1;
   overflow-y: auto;
