@@ -1999,7 +1999,7 @@ function toggleVenta(id) {
 
 function cargarResumenes(periodo, pestana) {
   if (pestana) {
-    document.querySelectorAll('#pantalla-resumenes .pestana').forEach(p => p.classList.remove('activa'));
+    document.querySelectorAll('#pantalla-resumenes .pestana-carpeta').forEach(p => p.classList.remove('activa'));
     pestana.classList.add('activa');
   }
 
