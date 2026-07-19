@@ -1808,6 +1808,142 @@ body.escaneando .app {
 }
 
 /* ------------------------------------------------
+   CAJA: apertura de turno, gastos y cierre
+   ------------------------------------------------ */
+.card-caja {
+  background: var(--fondo-card);
+  border-radius: 20px;
+  padding: 24px 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.card-caja-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.card-caja-titulo {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.card-caja-subtitulo {
+  font-size: 13px;
+  color: var(--texto-secundario);
+  margin: 2px 0 20px;
+}
+
+.campo-monto-wrap { position: relative; margin-bottom: 18px; }
+
+.campo-monto-wrap .simbolo-monto {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: var(--texto-secundario);
+  font-weight: 600;
+}
+
+.input-monto {
+  width: 100%;
+  padding: 14px 14px 14px 30px;
+  border-radius: 10px;
+  border: 0.5px solid var(--borde);
+  background: var(--fondo-secundario);
+  font-size: 16px;
+  color: var(--texto);
+  font-family: Arial, sans-serif;
+}
+
+.input-monto:focus {
+  outline: none;
+  border-color: var(--azul);
+  background: var(--fondo-card);
+}
+
+.btn-medio-pago {
+  flex: 1;
+  padding: 13px 8px;
+  border-radius: 10px;
+  border: 0.5px solid var(--borde);
+  background: var(--fondo-secundario);
+  color: var(--texto);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  font-family: Arial, sans-serif;
+  transition: all 0.15s;
+}
+
+.btn-medio-pago.activo {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: #ffffff;
+}
+
+.turno-info {
+  font-size: 12px;
+  color: var(--texto-secundario);
+  margin-bottom: 16px;
+}
+
+.bloque-cierre-caja {
+  background: var(--fondo-secundario);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.bloque-cierre-caja-titulo {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--texto);
+  margin-bottom: 10px;
+}
+
+.fila-cierre-caja {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 14px;
+  color: var(--texto-secundario);
+}
+
+.fila-cierre-caja.destacada {
+  font-weight: 700;
+  color: var(--texto);
+  font-size: 15px;
+  padding-top: 10px;
+  margin-top: 6px;
+  border-top: 0.5px solid var(--borde);
+}
+
+.fila-cierre-caja .monto-positivo { color: var(--verde-oscuro); }
+.fila-cierre-caja .monto-negativo { color: var(--rojo); }
+
+/* Headers en verde clarito, igual que el resto de formularios de la app */
+#form-apertura-caja .formulario-header,
+#form-gasto .formulario-header,
+#form-cierre-caja .formulario-header {
+  background: #e8f8ee;
+}
+
+#form-apertura-caja .formulario-titulo,
+#form-apertura-caja .btn-volver,
+#form-gasto .formulario-titulo,
+#form-gasto .btn-volver,
+#form-cierre-caja .formulario-titulo,
+#form-cierre-caja .btn-volver {
+  color: #1a1a1a;
+}
+
+/* ------------------------------------------------
    BOTTOM NAVIGATION BAR
    Barra de navegación fija en la parte inferior.
    Reemplaza el menú hamburguesa lateral.
@@ -2213,4 +2349,8 @@ body.escaneando .app {
   color: #1a1a1a;
   font-size: 13px;
   font-weight: 600;
+}
+
+.btn-inicio-neutro {
+  background: #e9e9e5;
 }

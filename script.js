@@ -618,7 +618,12 @@ function cerrarCamara() {
 function cargarBaseDeDatos() {
   try {
     const datosGuardados = localStorage.getItem(CLAVE_DB);
-    if (datosGuardados) return JSON.parse(datosGuardados);
+    if (datosGuardados) {
+      const datos = JSON.parse(datosGuardados);
+      if (datos.turnoCaja === undefined)   datos.turnoCaja = null;
+      if (!datos.historialCajas)           datos.historialCajas = [];
+      return datos;
+    }
   } catch (error) {
     console.error('Error al cargar la base de datos:', error);
   }
@@ -636,6 +641,8 @@ function cargarBaseDeDatos() {
     ],
     ventas:   [],
     fiado:    {},
+    turnoCaja: null,
+    historialCajas: [],
     siguienteIdProducto: 5,
     siguienteIdCliente:  3,
     siguienteIdVenta:    1,
@@ -2277,30 +2284,32 @@ function mostrarDeudaCliente() {
   }
 }
 
+// Medio de pago elegido en el modal de cobro de fiado ('efectivo' | 'transferencia')
+let medioPagoFiadoActual = 'efectivo';
+
 function pagoRapidoFiado(clienteId) {
   const cliente = bd.clientes.find(c => c.id == clienteId);
   const cuenta  = bd.fiado[clienteId];
   if (!cuenta) return;
 
-  const montoStr = prompt(
-    `Cobro a ${cliente ? cliente.nombre : 'cliente'}\n` +
-    `Deuda actual: ${formatearMonto(cuenta.deuda)}\n\n` +
-    `¿Cuánto paga? ($)`
-  );
+  // Precargamos el modal con este cliente ya seleccionado
+  const select = document.getElementById('fiado-cliente-sel');
+  select.innerHTML = `<option value="${clienteId}">${cliente ? cliente.nombre : 'Cliente'}</option>`;
+  select.value    = clienteId;
+  select.disabled = true;
 
-  const monto = parseFloat(montoStr);
-  if (!monto || monto <= 0) return;
+  document.getElementById('fiado-monto').value = '';
+  seleccionarMedioPagoFiado('efectivo');
+  mostrarDeudaCliente();
 
-  cuenta.deuda = Math.max(0, cuenta.deuda - monto);
-  cuenta.movimientos.unshift({
-    tipo:  'pago',
-    monto: monto,
-    fecha: new Date().toISOString()
-  });
+  abrirModal('modal-pago-fiado');
+}
 
-  guardarBaseDeDatos();
-  renderizarFiado();
-  alert(`✅ Pago registrado: ${formatearMonto(monto)}\nDeuda restante: ${formatearMonto(cuenta.deuda)}`);
+// Toggle Efectivo / Transferencia dentro del modal de cobro de fiado
+function seleccionarMedioPagoFiado(medio) {
+  medioPagoFiadoActual = medio;
+  document.getElementById('btn-medio-fiado-efectivo').classList.toggle('activo', medio === 'efectivo');
+  document.getElementById('btn-medio-fiado-transferencia').classList.toggle('activo', medio === 'transferencia');
 }
 
 function confirmarPagoFiado() {
@@ -2319,10 +2328,12 @@ function confirmarPagoFiado() {
   cuenta.movimientos.unshift({
     tipo:  'pago',
     monto: monto,
+    medio: medioPagoFiadoActual,
     fecha: new Date().toISOString()
   });
 
   guardarBaseDeDatos();
+  document.getElementById('fiado-cliente-sel').disabled = false;
   cerrarModal('modal-pago-fiado');
   renderizarFiado();
 }
@@ -2357,6 +2368,225 @@ function ajustarDeudaFiadoPorCambioPrecio(productoId, precioAnterior, precioNuev
       });
     }
   });
+}
+
+/* ================================================
+   CAJA: APERTURA, GASTOS Y CIERRE DE TURNO
+   ================================================ */
+
+// Medio de pago elegido en el formulario de "Nuevo gasto"
+let medioGastoActual = 'efectivo';
+
+function abrirAperturaCaja() {
+  if (bd.turnoCaja && bd.turnoCaja.abierto) {
+    alert('Ya hay un turno abierto. Cerralo antes de abrir uno nuevo.');
+    abrirCierreCaja();
+    return;
+  }
+
+  pushEstado('form');
+  document.getElementById('apertura-efectivo').value      = '';
+  document.getElementById('apertura-transferencia').value = '';
+  document.getElementById('form-apertura-caja').classList.add('abierto');
+  document.querySelector('.bottom-nav').style.display = 'none';
+}
+
+function cerrarAperturaCaja() {
+  document.getElementById('form-apertura-caja').classList.remove('abierto');
+  document.querySelector('.bottom-nav').style.display = 'flex';
+}
+
+function confirmarAperturaCaja() {
+  const efectivo      = parseFloat(document.getElementById('apertura-efectivo').value) || 0;
+  const transferencia = parseFloat(document.getElementById('apertura-transferencia').value) || 0;
+
+  bd.turnoCaja = {
+    abierto:              true,
+    fechaApertura:        new Date().toISOString(),
+    efectivoInicial:      efectivo,
+    transferenciaInicial: transferencia,
+    gastos:               []
+  };
+
+  guardarBaseDeDatos();
+  cerrarAperturaCaja();
+  alert('✅ Turno iniciado');
+}
+
+function abrirGasto() {
+  if (!bd.turnoCaja || !bd.turnoCaja.abierto) {
+    alert('Primero tenés que abrir un turno de caja.');
+    return;
+  }
+
+  pushEstado('form');
+  document.getElementById('gasto-concepto').value = '';
+  document.getElementById('gasto-monto').value     = '';
+  seleccionarMedioGasto('efectivo');
+  renderizarGastosTurno();
+  document.getElementById('form-gasto').classList.add('abierto');
+  document.querySelector('.bottom-nav').style.display = 'none';
+}
+
+function cerrarGasto() {
+  document.getElementById('form-gasto').classList.remove('abierto');
+  document.querySelector('.bottom-nav').style.display = 'flex';
+}
+
+// Toggle Efectivo / Transferencia dentro del formulario de "Nuevo gasto"
+function seleccionarMedioGasto(medio) {
+  medioGastoActual = medio;
+  document.getElementById('btn-medio-efectivo').classList.toggle('activo', medio === 'efectivo');
+  document.getElementById('btn-medio-transferencia').classList.toggle('activo', medio === 'transferencia');
+}
+
+function guardarGasto() {
+  const concepto = document.getElementById('gasto-concepto').value.trim();
+  const monto    = parseFloat(document.getElementById('gasto-monto').value);
+
+  if (!concepto)         { alert('Ingresá un concepto'); return; }
+  if (!monto || monto <= 0) { alert('Ingresá un monto válido'); return; }
+
+  bd.turnoCaja.gastos.unshift({
+    id:       Date.now(),
+    concepto: concepto,
+    monto:    monto,
+    medio:    medioGastoActual,
+    fecha:    new Date().toISOString()
+  });
+
+  guardarBaseDeDatos();
+  document.getElementById('gasto-concepto').value = '';
+  document.getElementById('gasto-monto').value     = '';
+  renderizarGastosTurno();
+}
+
+function eliminarGasto(id) {
+  if (!bd.turnoCaja) return;
+  bd.turnoCaja.gastos = bd.turnoCaja.gastos.filter(g => g.id !== id);
+  guardarBaseDeDatos();
+  renderizarGastosTurno();
+}
+
+function renderizarGastosTurno() {
+  const contenedor = document.getElementById('lista-gastos-turno');
+  if (!contenedor) return;
+
+  const gastos = bd.turnoCaja ? bd.turnoCaja.gastos : [];
+  if (gastos.length === 0) {
+    contenedor.innerHTML = '';
+    return;
+  }
+
+  contenedor.innerHTML = `
+    <p class="bloque-cierre-caja-titulo" style="margin-bottom:8px">Gastos de este turno</p>
+    ${gastos.map(g => `
+      <div class="fila-cierre-caja" style="padding:8px 0;border-bottom:0.5px solid var(--borde-claro)">
+        <span>${g.concepto} <span style="color:var(--texto-secundario)">(${g.medio === 'efectivo' ? 'Efectivo' : 'Transferencia'})</span></span>
+        <span style="display:flex;align-items:center;gap:8px">
+          <span class="monto-negativo">-${formatearMonto(g.monto)}</span>
+          <span style="cursor:pointer;color:var(--rojo)" onclick="eliminarGasto(${g.id})">✕</span>
+        </span>
+      </div>
+    `).join('')}
+  `;
+}
+
+// Suma ventas normales + cobros de fiado del turno abierto, separados
+// por medio de pago ('efectivo' o 'transferencia'). El fiado en sí
+// (venta a crédito) no entra acá: recién impacta cuando se cobra.
+function calcularIngresosTurno(medio) {
+  if (!bd.turnoCaja) return 0;
+  const desde = new Date(bd.turnoCaja.fechaApertura);
+
+  const ventas = bd.ventas
+    .filter(v => v.pago === medio && new Date(v.fecha) >= desde)
+    .reduce((s, v) => s + v.total, 0);
+
+  let cobrosFiado = 0;
+  Object.values(bd.fiado).forEach(cuenta => {
+    cuenta.movimientos.forEach(m => {
+      if (m.tipo === 'pago' && m.medio === medio && new Date(m.fecha) >= desde) {
+        cobrosFiado += m.monto;
+      }
+    });
+  });
+
+  return ventas + cobrosFiado;
+}
+
+function calcularGastosTurno(medio) {
+  if (!bd.turnoCaja) return 0;
+  return bd.turnoCaja.gastos
+    .filter(g => g.medio === medio)
+    .reduce((s, g) => s + g.monto, 0);
+}
+
+function calcularTotalesCaja() {
+  const efectivoVentas      = calcularIngresosTurno('efectivo');
+  const transferenciaVentas = calcularIngresosTurno('transferencia');
+  const efectivoGastos      = calcularGastosTurno('efectivo');
+  const transferenciaGastos = calcularGastosTurno('transferencia');
+
+  return {
+    efectivoInicio:      bd.turnoCaja.efectivoInicial,
+    efectivoVentas:      efectivoVentas,
+    efectivoGastos:      efectivoGastos,
+    efectivoTotal:       bd.turnoCaja.efectivoInicial + efectivoVentas - efectivoGastos,
+    transferenciaInicio: bd.turnoCaja.transferenciaInicial,
+    transferenciaVentas: transferenciaVentas,
+    transferenciaGastos: transferenciaGastos,
+    transferenciaTotal:  bd.turnoCaja.transferenciaInicial + transferenciaVentas - transferenciaGastos
+  };
+}
+
+function abrirCierreCaja() {
+  if (!bd.turnoCaja || !bd.turnoCaja.abierto) {
+    alert('No hay ningún turno abierto para cerrar.');
+    return;
+  }
+
+  pushEstado('form');
+  const t     = calcularTotalesCaja();
+  const desde = formatearFecha(bd.turnoCaja.fechaApertura);
+  const hasta = formatearFecha(new Date().toISOString());
+
+  document.getElementById('cierre-turno-info').textContent = `Turno del ${desde} al ${hasta}`;
+
+  document.getElementById('cierre-efectivo-inicio').textContent = formatearMonto(t.efectivoInicio);
+  document.getElementById('cierre-efectivo-ventas').textContent = '+' + formatearMonto(t.efectivoVentas);
+  document.getElementById('cierre-efectivo-gastos').textContent = '-' + formatearMonto(t.efectivoGastos);
+  document.getElementById('cierre-efectivo-total').textContent  = formatearMonto(t.efectivoTotal);
+
+  document.getElementById('cierre-transferencia-inicio').textContent = formatearMonto(t.transferenciaInicio);
+  document.getElementById('cierre-transferencia-ventas').textContent = '+' + formatearMonto(t.transferenciaVentas);
+  document.getElementById('cierre-transferencia-gastos').textContent = '-' + formatearMonto(t.transferenciaGastos);
+  document.getElementById('cierre-transferencia-total').textContent  = formatearMonto(t.transferenciaTotal);
+
+  document.getElementById('form-cierre-caja').classList.add('abierto');
+  document.querySelector('.bottom-nav').style.display = 'none';
+}
+
+function cerrarCierreCaja() {
+  document.getElementById('form-cierre-caja').classList.remove('abierto');
+  document.querySelector('.bottom-nav').style.display = 'flex';
+}
+
+function confirmarCierreCaja() {
+  if (!confirm('¿Confirmás el cierre de este turno? No vas a poder deshacerlo.')) return;
+
+  const t = calcularTotalesCaja();
+
+  bd.historialCajas.unshift({
+    ...bd.turnoCaja,
+    fechaCierre: new Date().toISOString(),
+    ...t
+  });
+
+  bd.turnoCaja = null;
+  guardarBaseDeDatos();
+  cerrarCierreCaja();
+  alert('✅ Turno cerrado correctamente');
 }
 
 /* ================================================

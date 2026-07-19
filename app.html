@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-title" content="VendoMas">
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="estilos.css?v=3">
+  <link rel="stylesheet" href="estilos.css?v=4">
 </head>
 <body>
 
@@ -156,6 +156,23 @@
         <span>Resumen</span>
       </button>
     </div>
+
+    <div class="botones-inicio" id="fila-caja">
+      <button class="btn-inicio" id="btn-apertura-caja" onclick="abrirAperturaCaja()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="3"/></svg>
+        <span>Apertura de caja</span>
+      </button>
+
+      <button class="btn-inicio" id="btn-gastos" onclick="abrirGasto()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2"><path d="M6 2h12v19l-3-2-3 2-3-2-3 2V2Z"/><line x1="8.5" y1="7" x2="15.5" y2="7"/><line x1="8.5" y1="11" x2="15.5" y2="11"/></svg>
+        <span>Gastos</span>
+      </button>
+
+      <button class="btn-inicio btn-inicio-neutro" id="btn-cierre-caja" onclick="abrirCierreCaja()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5f5e5a" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        <span>Cierre de caja</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -229,6 +246,113 @@
   <!-- ================================================
        OVERLAY: ACTUALIZAR PRECIOS POR MARCA
        ================================================ -->
+  <!-- ================================================
+       OVERLAY: APERTURA DE CAJA
+       ================================================ -->
+  <div class="formulario-overlay" id="form-apertura-caja">
+    <div class="formulario-header">
+      <span class="btn-volver" onclick="cerrarAperturaCaja()">←</span>
+      <span class="formulario-titulo">Apertura de caja</span>
+    </div>
+    <div class="formulario-cuerpo">
+      <div class="card-caja">
+        <div class="card-caja-encabezado">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="3"/></svg>
+          <span class="card-caja-titulo">Abrir turno</span>
+        </div>
+        <p class="card-caja-subtitulo">Cargá con cuánto arrancás hoy.</p>
+
+        <label class="etiqueta-campo">Efectivo en caja</label>
+        <div class="campo-monto-wrap">
+          <span class="simbolo-monto">$</span>
+          <input class="input-monto" type="number" id="apertura-efectivo" placeholder="0" inputmode="decimal"/>
+        </div>
+
+        <label class="etiqueta-campo">Saldo en cuenta / transferencia</label>
+        <div class="campo-monto-wrap">
+          <span class="simbolo-monto">$</span>
+          <input class="input-monto" type="number" id="apertura-transferencia" placeholder="0" inputmode="decimal"/>
+        </div>
+
+        <button class="btn-primario ancho-completo" onclick="confirmarAperturaCaja()">Iniciar turno</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================
+       OVERLAY: REGISTRAR GASTO
+       ================================================ -->
+  <div class="formulario-overlay" id="form-gasto">
+    <div class="formulario-header">
+      <span class="btn-volver" onclick="cerrarGasto()">←</span>
+      <span class="formulario-titulo">Registrar gasto</span>
+    </div>
+    <div class="formulario-cuerpo">
+      <div class="card-caja">
+        <div class="card-caja-encabezado">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2"><path d="M6 2h12v19l-3-2-3 2-3-2-3 2V2Z"/><line x1="8.5" y1="7" x2="15.5" y2="7"/><line x1="8.5" y1="11" x2="15.5" y2="11"/></svg>
+          <span class="card-caja-titulo">Nuevo gasto</span>
+        </div>
+
+        <label class="etiqueta-campo">Concepto</label>
+        <input class="input-campo" type="text" id="gasto-concepto" placeholder="Ej: Pago proveedor de bebidas" maxlength="60"/>
+
+        <label class="etiqueta-campo">Monto</label>
+        <div class="campo-monto-wrap">
+          <span class="simbolo-monto">$</span>
+          <input class="input-monto" type="number" id="gasto-monto" placeholder="0" inputmode="decimal"/>
+        </div>
+
+        <label class="etiqueta-campo">¿De dónde sale?</label>
+        <div style="display:flex;gap:10px;margin-bottom:20px">
+          <div class="btn-medio-pago activo" id="btn-medio-efectivo" onclick="seleccionarMedioGasto('efectivo')">Efectivo</div>
+          <div class="btn-medio-pago" id="btn-medio-transferencia" onclick="seleccionarMedioGasto('transferencia')">Transferencia</div>
+        </div>
+
+        <button class="btn-primario ancho-completo" onclick="guardarGasto()">Guardar gasto</button>
+      </div>
+
+      <div id="lista-gastos-turno" style="margin-top:18px"></div>
+    </div>
+  </div>
+
+  <!-- ================================================
+       OVERLAY: CIERRE DE CAJA
+       ================================================ -->
+  <div class="formulario-overlay" id="form-cierre-caja">
+    <div class="formulario-header">
+      <span class="btn-volver" onclick="cerrarCierreCaja()">←</span>
+      <span class="formulario-titulo">Cierre de caja</span>
+    </div>
+    <div class="formulario-cuerpo">
+      <div class="card-caja">
+        <div class="card-caja-encabezado">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          <span class="card-caja-titulo">Cerrar turno</span>
+        </div>
+        <p class="turno-info" id="cierre-turno-info">Turno —</p>
+
+        <div class="bloque-cierre-caja">
+          <div class="bloque-cierre-caja-titulo">Efectivo</div>
+          <div class="fila-cierre-caja"><span>Inicio</span><span id="cierre-efectivo-inicio">$0</span></div>
+          <div class="fila-cierre-caja"><span>Ventas</span><span class="monto-positivo" id="cierre-efectivo-ventas">+$0</span></div>
+          <div class="fila-cierre-caja"><span>Gastos</span><span class="monto-negativo" id="cierre-efectivo-gastos">-$0</span></div>
+          <div class="fila-cierre-caja destacada"><span>Total en caja</span><span id="cierre-efectivo-total">$0</span></div>
+        </div>
+
+        <div class="bloque-cierre-caja">
+          <div class="bloque-cierre-caja-titulo">Transferencia</div>
+          <div class="fila-cierre-caja"><span>Inicio</span><span id="cierre-transferencia-inicio">$0</span></div>
+          <div class="fila-cierre-caja"><span>Ventas</span><span class="monto-positivo" id="cierre-transferencia-ventas">+$0</span></div>
+          <div class="fila-cierre-caja"><span>Gastos</span><span class="monto-negativo" id="cierre-transferencia-gastos">-$0</span></div>
+          <div class="fila-cierre-caja destacada"><span>Total en cuenta</span><span id="cierre-transferencia-total">$0</span></div>
+        </div>
+
+        <button class="btn-primario ancho-completo" onclick="confirmarCierreCaja()">Confirmar cierre</button>
+      </div>
+    </div>
+  </div>
+
   <div class="formulario-overlay" id="form-actualizar-precios">
     <div class="formulario-header">
       <span class="btn-volver" onclick="cerrarActualizarPrecios()">←</span>
@@ -711,8 +835,16 @@
       <input class="input-campo" id="fiado-monto" type="number" placeholder="0"/>
     </div>
 
+    <div class="grupo-campo">
+      <label class="etiqueta-campo">¿Cómo lo cobrás?</label>
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <div class="btn-medio-pago activo" id="btn-medio-fiado-efectivo" onclick="seleccionarMedioPagoFiado('efectivo')">Efectivo</div>
+        <div class="btn-medio-pago" id="btn-medio-fiado-transferencia" onclick="seleccionarMedioPagoFiado('transferencia')">Transferencia</div>
+      </div>
+    </div>
+
     <div class="modal-botones">
-      <button class="btn-secundario" onclick="cerrarModal('modal-pago-fiado')">Cancelar</button>
+      <button class="btn-secundario" onclick="document.getElementById('fiado-cliente-sel').disabled=false; cerrarModal('modal-pago-fiado')">Cancelar</button>
       <button class="btn-primario" onclick="confirmarPagoFiado()">Registrar pago</button>
     </div>
   </div>
@@ -861,7 +993,7 @@
   }
 </script>
 
-<script src="script.js?v=2"></script>
+<script src="script.js?v=3"></script>
 
 <!-- PWA: registramos el Service Worker (solo en modo navegador, no en la app nativa) -->
 <script>
