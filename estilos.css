@@ -361,7 +361,7 @@ body {
 }
 
 .carrito-item-subtotal {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--azul);
   min-width: 60px;
@@ -388,7 +388,7 @@ body {
 }
 
 .total-monto {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--texto);
 }
@@ -524,7 +524,7 @@ body {
 }
 
 .venta-monto {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--azul);
 }
@@ -640,7 +640,7 @@ body {
 }
 
 .chip-con-deuda {
-  font-size: 11px;
+  font-size: 12px;
   padding: 3px 10px;
   border-radius: 999px;
   background: var(--amarillo-fondo);
@@ -650,7 +650,7 @@ body {
 }
 
 .deuda-monto {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
   color: var(--rojo);
 }
@@ -1282,7 +1282,7 @@ body.escaneando .app {
 }
 
 .total-monto-grande {
-  font-size: 32px;
+  font-size: 34px;
   font-weight: 700;
   color: var(--texto);
 }
@@ -1359,7 +1359,7 @@ body.escaneando .app {
   border-radius: 14px;
   padding: 14px;
   text-align: center;
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 700;
   color: var(--texto);
   margin-bottom: 10px;
@@ -1513,7 +1513,7 @@ body.escaneando .app {
 }
 
 .confirmacion-card-monto {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--texto);
 }
@@ -1524,7 +1524,7 @@ body.escaneando .app {
 }
 
 .confirmacion-monto-vuelto {
-  font-size: 48px;
+  font-size: 50px;
   color: var(--verde);
 }
 
@@ -1575,7 +1575,7 @@ body.escaneando .app {
 }
 
 .monto-vuelto {
-  font-size: 30px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--verde);
 }
@@ -1584,7 +1584,7 @@ body.escaneando .app {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   margin-bottom: 14px;
   color: var(--texto);
@@ -1918,7 +1918,7 @@ body.escaneando .app {
 .fila-cierre-caja.destacada {
   font-weight: 700;
   color: var(--texto);
-  font-size: 15px;
+  font-size: 16px;
   padding-top: 10px;
   margin-top: 6px;
   border-top: 0.5px solid var(--borde);
@@ -2100,7 +2100,7 @@ body.escaneando .app {
 }
 
 .dashboard-card-principal .dashboard-monto {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 700;
   color: #ffffff;
   margin-bottom: 4px;
@@ -2135,7 +2135,7 @@ body.escaneando .app {
 }
 
 .dashboard-mini-card .dashboard-valor {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--texto);
 }

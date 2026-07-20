@@ -808,6 +808,12 @@ async function reportarCodigoDesconocido(producto) {
    ================================================ */
 
 function formatearMonto(numero) {
+  return '$' + Math.round(parseFloat(numero) || 0).toLocaleString('es-AR');
+}
+
+// Se usa solo en el carrito de venta, donde un ítem pesado (por kg)
+// puede generar un subtotal con centavos reales (ej: 150gr a $1250/kg = $187,50)
+function formatearMontoConCentavos(numero) {
   return '$' + parseFloat(numero).toLocaleString('es-AR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
@@ -868,6 +874,8 @@ function mostrarFlashCamara() {
    ================================================ */
 
 function irA(pantalla, botonNav) {
+  if (pantalla === 'venta' && !exigirTurnoAbiertoParaVender()) return;
+
   if (!navegandoPorHistorial) pushEstado(pantalla);
   cerrarMenuMas();
   document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
@@ -889,6 +897,7 @@ function irA(pantalla, botonNav) {
   if (pantalla === 'detalleResumen') cargarDetalleResumen('hoy');
   if (pantalla === 'clientes')  renderizarClientes();
   if (pantalla === 'fiado')     renderizarFiado();
+  if (pantalla === 'historialCajas') renderizarHistorialCajas();
   if (pantalla === 'ajustes')   cargarAjustes();
 }
 
@@ -1012,6 +1021,8 @@ async function asegurarModuloEscaneo(BarcodeScanner) {
    ================================================ */
 
 async function pruebaScanner() {
+  if (!exigirTurnoAbiertoParaVender()) return;
+
   try {
     let codigo;
 
@@ -1156,7 +1167,7 @@ function renderizarCarrito() {
   const totalPesos = carritoActual.reduce((suma, item) => suma + item.precio * item.cantidad, 0);
 
   contador.textContent   = `${totalItems} producto${totalItems !== 1 ? 's' : ''}`;
-  totalMonto.textContent = formatearMonto(totalPesos);
+  totalMonto.textContent = formatearMontoConCentavos(totalPesos);
 
   lista.innerHTML = carritoActual.map(item => {
     const controlesCantidad = item.esPorPeso
@@ -1173,7 +1184,7 @@ function renderizarCarrito() {
         <div class="carrito-cantidad">
           ${controlesCantidad}
         </div>
-        <span class="carrito-item-subtotal">${formatearMonto(item.precio * item.cantidad)}</span>
+        <span class="carrito-item-subtotal">${formatearMontoConCentavos(item.precio * item.cantidad)}</span>
       </div>
     `;
   }).join('');
@@ -1186,6 +1197,11 @@ function cancelarVenta() {
 }
 
 function cobrarVenta() {
+  if (!hayTurnoAbierto()) {
+    alert('No podés cobrar sin un turno de caja abierto.');
+    return;
+  }
+
   if (carritoActual.length === 0) {
     alert('Agregá productos antes de cobrar');
     return;
@@ -1484,6 +1500,8 @@ function confirmarCobro() {
    ================================================ */
 
 function abrirBusqueda() {
+  if (!exigirTurnoAbiertoParaVender()) return;
+
   pushEstado('form');
   document.getElementById('busqueda-overlay').classList.add('abierta');
   filtrarBusqueda('');
@@ -1956,7 +1974,7 @@ function renderizarHistorial(periodo) {
       <div class="historial-detalle-item">
         <span class="historial-detalle-nombre">${item.nombre}</span>
         <span class="historial-detalle-cant">x${item.cantidad}</span>
-        <span class="historial-detalle-subtotal">${formatearMonto(item.precio * item.cantidad)}</span>
+        <span class="historial-detalle-subtotal">${formatearMontoConCentavos(item.precio * item.cantidad)}</span>
       </div>
     `).join('');
 
@@ -2021,10 +2039,18 @@ function cargarResumenes(periodo, pestana) {
 
   const totalFacturado = ventas.reduce((s, v) => s + v.total, 0);
 
+  // Si hay un turno de caja abierto, mostramos desde qué hora está abierto
+  const infoTurno = (bd.turnoCaja && bd.turnoCaja.abierto)
+    ? `<p style="font-size:12px;color:#888;margin:6px 0 0;font-weight:500">Turno abierto desde las ${
+        new Date(bd.turnoCaja.fechaApertura).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+      } hs</p>`
+    : '';
+
   // Solo el total simple, estilo carpeta
   document.getElementById('grilla-kpi').innerHTML = `
     <p style="font-size:12px;color:#888;margin:0 0 4px;font-weight:500">Total vendido</p>
-    <p style="font-size:28px;font-weight:400;color:#1a1a1a;margin:0;letter-spacing:-0.3px">${formatearMonto(totalFacturado)}</p>
+    <p style="font-size:30px;font-weight:400;color:#1a1a1a;margin:0;letter-spacing:-0.3px">${formatearMonto(totalFacturado)}</p>
+    ${infoTurno}
   `;
 }
 
@@ -2374,6 +2400,20 @@ function ajustarDeudaFiadoPorCambioPrecio(productoId, precioAnterior, precioNuev
    CAJA: APERTURA, GASTOS Y CIERRE DE TURNO
    ================================================ */
 
+// Devuelve true si hay un turno de caja abierto en este momento
+function hayTurnoAbierto() {
+  return !!(bd.turnoCaja && bd.turnoCaja.abierto);
+}
+
+// Se usa como guardia en los puntos de entrada a la venta:
+// si no hay turno abierto, avisa y lleva directo a "Apertura de caja"
+function exigirTurnoAbiertoParaVender() {
+  if (hayTurnoAbierto()) return true;
+  alert('Primero tenés que abrir la caja para poder vender.');
+  abrirAperturaCaja();
+  return false;
+}
+
 // Medio de pago elegido en el formulario de "Nuevo gasto"
 let medioGastoActual = 'efectivo';
 
@@ -2410,7 +2450,16 @@ function confirmarAperturaCaja() {
 
   guardarBaseDeDatos();
   cerrarAperturaCaja();
+  refrescarKPIInicio();
   alert('✅ Turno iniciado');
+}
+
+// Vuelve a pintar el KPI de "Total vendido" del home respetando la
+// pestaña (Hoy/Semana/Mes/Todo) que esté activa en ese momento.
+function refrescarKPIInicio() {
+  const pestanaActiva = document.querySelector('#pantalla-resumenes .pestana-carpeta.activa');
+  const periodo        = pestanaActiva ? pestanaActiva.textContent.trim().toLowerCase() : 'hoy';
+  cargarResumenes(periodo);
 }
 
 function abrirGasto() {
@@ -2586,7 +2635,51 @@ function confirmarCierreCaja() {
   bd.turnoCaja = null;
   guardarBaseDeDatos();
   cerrarCierreCaja();
+  refrescarKPIInicio();
   alert('✅ Turno cerrado correctamente');
+}
+
+// Pinta la lista de turnos ya cerrados (más reciente primero)
+function renderizarHistorialCajas() {
+  const contenedor = document.getElementById('lista-historial-cajas');
+  if (!contenedor) return;
+
+  const turnos = bd.historialCajas || [];
+
+  if (turnos.length === 0) {
+    contenedor.innerHTML = '<div class="estado-vacio">Todavía no cerraste ningún turno de caja</div>';
+    return;
+  }
+
+  contenedor.innerHTML = turnos.map(t => {
+    const desde = formatearFecha(t.fechaApertura);
+    const hasta = formatearFecha(t.fechaCierre);
+    const cantidadGastos = (t.gastos || []).length;
+
+    return `
+      <div class="card-caja" style="margin-bottom:14px">
+        <p class="turno-info" style="margin-bottom:14px">Turno del ${desde} al ${hasta}</p>
+
+        <div class="bloque-cierre-caja">
+          <div class="bloque-cierre-caja-titulo">Efectivo</div>
+          <div class="fila-cierre-caja"><span>Inicio</span><span>${formatearMonto(t.efectivoInicio)}</span></div>
+          <div class="fila-cierre-caja"><span>Ventas</span><span class="monto-positivo">+${formatearMonto(t.efectivoVentas)}</span></div>
+          <div class="fila-cierre-caja"><span>Gastos</span><span class="monto-negativo">-${formatearMonto(t.efectivoGastos)}</span></div>
+          <div class="fila-cierre-caja destacada"><span>Total en caja</span><span>${formatearMonto(t.efectivoTotal)}</span></div>
+        </div>
+
+        <div class="bloque-cierre-caja" style="margin-bottom:0">
+          <div class="bloque-cierre-caja-titulo">Transferencia</div>
+          <div class="fila-cierre-caja"><span>Inicio</span><span>${formatearMonto(t.transferenciaInicio)}</span></div>
+          <div class="fila-cierre-caja"><span>Ventas</span><span class="monto-positivo">+${formatearMonto(t.transferenciaVentas)}</span></div>
+          <div class="fila-cierre-caja"><span>Gastos</span><span class="monto-negativo">-${formatearMonto(t.transferenciaGastos)}</span></div>
+          <div class="fila-cierre-caja destacada"><span>Total en cuenta</span><span>${formatearMonto(t.transferenciaTotal)}</span></div>
+        </div>
+
+        ${cantidadGastos > 0 ? `<p class="turno-info" style="margin:10px 0 0">${cantidadGastos} gasto${cantidadGastos !== 1 ? 's' : ''} registrado${cantidadGastos !== 1 ? 's' : ''} en este turno</p>` : ''}
+      </div>
+    `;
+  }).join('');
 }
 
 /* ================================================

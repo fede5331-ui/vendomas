@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-title" content="VendoMas">
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="estilos.css?v=4">
+  <link rel="stylesheet" href="estilos.css?v=5">
 </head>
 <body>
 
@@ -214,6 +214,14 @@
   <div class="pantalla" id="pantalla-fiado">
     <p class="titulo-pantalla">Fiado</p>
     <div id="lista-fiado"></div>
+  </div>
+
+  <!-- ================================================
+       PANTALLA: HISTORIAL DE CAJAS
+       ================================================ -->
+  <div class="pantalla" id="pantalla-historialCajas">
+    <p class="titulo-pantalla">Historial de cajas</p>
+    <div id="lista-historial-cajas"></div>
   </div>
 
   <!-- ================================================
@@ -470,6 +478,10 @@
       <div class="mas-item" onclick="irA('ajustes', null); cerrarMenuMas()">
         <svg xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor" style="flex-shrink:0"><path d="m370-80-16-128q-25-5-46.5-17T267-257l-121 51-80-138 102-78q-2-12-2-28t2-28L66-556l80-138 121 51q20-19 41.5-31t46.5-17l16-128h160l16 128q25 5 46.5 17t40.5 32l121-51 80 138-102 78q2 12 2 28t-2 28l102 78-80 138-121-51q-20 19-41.5 31t-46.5 17L590-80H370Zm80-280q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35Z"/></svg>
         Ajustes
+      </div>
+      <div class="mas-item" onclick="irA('historialCajas', null); cerrarMenuMas()">
+        <svg xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor" style="flex-shrink:0"><path d="M480-120q-138 0-240.5-91.5T122-440h82q14 104 92.5 172T480-200q117 0 198.5-81.5T760-480q0-117-81.5-198.5T480-760q-69 0-129 32t-101 88h110v80H120v-240h80v94q51-64 124.5-101T480-840q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-480q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-120Zm112-192L440-464v-216h80v184l128 128-56 56Z"/></svg>
+        Historial de cajas
       </div>
       <div class="mas-item" onclick="abrirDescargaApp(); cerrarMenuMas()">
         <svg xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor" style="flex-shrink:0"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></svg>
@@ -993,7 +1005,7 @@
   }
 </script>
 
-<script src="script.js?v=3"></script>
+<script src="script.js?v=4"></script>
 
 <!-- PWA: registramos el Service Worker (solo en modo navegador, no en la app nativa) -->
 <script>
