@@ -622,6 +622,7 @@ function cargarBaseDeDatos() {
       const datos = JSON.parse(datosGuardados);
       if (datos.turnoCaja === undefined)   datos.turnoCaja = null;
       if (!datos.historialCajas)           datos.historialCajas = [];
+      if (!datos.gastosSueltos)            datos.gastosSueltos = [];
       return datos;
     }
   } catch (error) {
@@ -643,6 +644,7 @@ function cargarBaseDeDatos() {
     fiado:    {},
     turnoCaja: null,
     historialCajas: [],
+    gastosSueltos: [],
     siguienteIdProducto: 5,
     siguienteIdCliente:  3,
     siguienteIdVenta:    1,
@@ -893,7 +895,7 @@ function irA(pantalla, botonNav) {
            if (buscarStock) buscarStock.value = '';
           }
   if (pantalla === 'historial') renderizarHistorial('hoy');
-  if (pantalla === 'resumenes') cargarResumenes('hoy');
+  if (pantalla === 'resumenes') { cargarResumenes('hoy'); renderizarCardBalance(); }
   if (pantalla === 'detalleResumen') cargarDetalleResumen('hoy');
   if (pantalla === 'clientes')  renderizarClientes();
   if (pantalla === 'fiado')     renderizarFiado();
@@ -2441,6 +2443,7 @@ function confirmarAperturaCaja() {
   const transferencia = parseFloat(document.getElementById('apertura-transferencia').value) || 0;
 
   bd.turnoCaja = {
+    id:                   Date.now(),
     abierto:              true,
     fechaApertura:        new Date().toISOString(),
     efectivoInicial:      efectivo,
@@ -2449,29 +2452,38 @@ function confirmarAperturaCaja() {
   };
 
   guardarBaseDeDatos();
+  sincronizarTurno(bd.turnoCaja, 'crear');
   cerrarAperturaCaja();
   refrescarKPIInicio();
   alert('✅ Turno iniciado');
 }
 
 // Vuelve a pintar el KPI de "Total vendido" del home respetando la
-// pestaña (Hoy/Semana/Mes/Todo) que esté activa en ese momento.
+// pestaña (Hoy/Semana/Mes/Todo) que esté activa en ese momento,
+// y de paso refresca la tarjeta de Balance.
 function refrescarKPIInicio() {
   const pestanaActiva = document.querySelector('#pantalla-resumenes .pestana-carpeta.activa');
   const periodo        = pestanaActiva ? pestanaActiva.textContent.trim().toLowerCase() : 'hoy';
   cargarResumenes(periodo);
+  renderizarCardBalance();
 }
 
 function abrirGasto() {
-  if (!bd.turnoCaja || !bd.turnoCaja.abierto) {
-    alert('Primero tenés que abrir un turno de caja.');
-    return;
-  }
-
   pushEstado('form');
   document.getElementById('gasto-concepto').value = '';
   document.getElementById('gasto-monto').value     = '';
   seleccionarMedioGasto('efectivo');
+
+  const nota = document.getElementById('gasto-nota-turno');
+  if (nota) {
+    if (hayTurnoAbierto()) {
+      nota.style.display = 'none';
+    } else {
+      nota.textContent   = 'Sin turno abierto — este gasto va a quedar registrado como gasto suelto.';
+      nota.style.display = 'block';
+    }
+  }
+
   renderizarGastosTurno();
   document.getElementById('form-gasto').classList.add('abierto');
   document.querySelector('.bottom-nav').style.display = 'none';
@@ -2493,16 +2505,24 @@ function guardarGasto() {
   const concepto = document.getElementById('gasto-concepto').value.trim();
   const monto    = parseFloat(document.getElementById('gasto-monto').value);
 
-  if (!concepto)         { alert('Ingresá un concepto'); return; }
+  if (!concepto)            { alert('Ingresá un concepto'); return; }
   if (!monto || monto <= 0) { alert('Ingresá un monto válido'); return; }
 
-  bd.turnoCaja.gastos.unshift({
+  const gasto = {
     id:       Date.now(),
     concepto: concepto,
     monto:    monto,
     medio:    medioGastoActual,
     fecha:    new Date().toISOString()
-  });
+  };
+
+  if (hayTurnoAbierto()) {
+    bd.turnoCaja.gastos.unshift(gasto);
+    sincronizarGasto(gasto, bd.turnoCaja.id);
+  } else {
+    bd.gastosSueltos.unshift(gasto);
+    sincronizarGasto(gasto, null);
+  }
 
   guardarBaseDeDatos();
   document.getElementById('gasto-concepto').value = '';
@@ -2511,9 +2531,14 @@ function guardarGasto() {
 }
 
 function eliminarGasto(id) {
-  if (!bd.turnoCaja) return;
-  bd.turnoCaja.gastos = bd.turnoCaja.gastos.filter(g => g.id !== id);
+  if (hayTurnoAbierto() && bd.turnoCaja.gastos.some(g => g.id === id)) {
+    bd.turnoCaja.gastos = bd.turnoCaja.gastos.filter(g => g.id !== id);
+  } else {
+    bd.gastosSueltos = bd.gastosSueltos.filter(g => g.id !== id);
+  }
+
   guardarBaseDeDatos();
+  eliminarGastoSupabase(id);
   renderizarGastosTurno();
 }
 
@@ -2521,14 +2546,16 @@ function renderizarGastosTurno() {
   const contenedor = document.getElementById('lista-gastos-turno');
   if (!contenedor) return;
 
-  const gastos = bd.turnoCaja ? bd.turnoCaja.gastos : [];
+  const gastos = hayTurnoAbierto() ? bd.turnoCaja.gastos : bd.gastosSueltos;
+  const titulo = hayTurnoAbierto() ? 'Gastos de este turno' : 'Gastos sueltos cargados';
+
   if (gastos.length === 0) {
     contenedor.innerHTML = '';
     return;
   }
 
   contenedor.innerHTML = `
-    <p class="bloque-cierre-caja-titulo" style="margin-bottom:8px">Gastos de este turno</p>
+    <p class="bloque-cierre-caja-titulo" style="margin-bottom:8px">${titulo}</p>
     ${gastos.map(g => `
       <div class="fila-cierre-caja" style="padding:8px 0;border-bottom:0.5px solid var(--borde-claro)">
         <span>${g.concepto} <span style="color:var(--texto-secundario)">(${g.medio === 'efectivo' ? 'Efectivo' : 'Transferencia'})</span></span>
@@ -2624,13 +2651,16 @@ function cerrarCierreCaja() {
 function confirmarCierreCaja() {
   if (!confirm('¿Confirmás el cierre de este turno? No vas a poder deshacerlo.')) return;
 
-  const t = calcularTotalesCaja();
+  const t           = calcularTotalesCaja();
+  const fechaCierre = new Date().toISOString();
 
   bd.historialCajas.unshift({
     ...bd.turnoCaja,
-    fechaCierre: new Date().toISOString(),
+    fechaCierre: fechaCierre,
     ...t
   });
+
+  sincronizarTurno({ ...bd.turnoCaja, fechaCierre }, 'cerrar');
 
   bd.turnoCaja = null;
   guardarBaseDeDatos();
@@ -2639,48 +2669,291 @@ function confirmarCierreCaja() {
   alert('✅ Turno cerrado correctamente');
 }
 
-// Pinta la lista de turnos ya cerrados (más reciente primero)
+/* ------------------------------------------------
+   RESPALDO EN SUPABASE (tablas 'turnos' y 'gastos')
+   Igual que sincronizarVenta: corre en segundo plano;
+   si falla por falta de internet no rompe nada local.
+   ------------------------------------------------ */
+
+function sincronizarTurno(turno, accion) {
+  const negocio = bd.configuracion.nombreNegocio;
+  if (!negocio) return;
+
+  if (accion === 'crear') {
+    fetch(`${SUPABASE_URL}/rest/v1/turnos`, {
+      method: 'POST',
+      headers: {
+        'apikey':        SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type':  'application/json'
+      },
+      body: JSON.stringify({
+        id:                    turno.id,
+        negocio:               negocio,
+        fecha_apertura:        turno.fechaApertura,
+        efectivo_inicial:      turno.efectivoInicial,
+        transferencia_inicial: turno.transferenciaInicial,
+        estado:                'abierto'
+      })
+    }).catch(error => console.error('No se pudo sincronizar la apertura del turno:', error));
+  }
+
+  if (accion === 'cerrar') {
+    fetch(`${SUPABASE_URL}/rest/v1/turnos?id=eq.${turno.id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey':        SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type':  'application/json'
+      },
+      body: JSON.stringify({
+        fecha_cierre: turno.fechaCierre,
+        estado:       'cerrado'
+      })
+    }).catch(error => console.error('No se pudo sincronizar el cierre del turno:', error));
+  }
+}
+
+function sincronizarGasto(gasto, turnoId) {
+  const negocio = bd.configuracion.nombreNegocio;
+  if (!negocio) return;
+
+  fetch(`${SUPABASE_URL}/rest/v1/gastos`, {
+    method: 'POST',
+    headers: {
+      'apikey':        SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type':  'application/json'
+    },
+    body: JSON.stringify({
+      id:         gasto.id,
+      negocio:    negocio,
+      turno_id:   turnoId,
+      concepto:   gasto.concepto,
+      monto:      gasto.monto,
+      medio_pago: gasto.medio,
+      fecha:      gasto.fecha
+    })
+  }).catch(error => console.error('No se pudo sincronizar el gasto:', error));
+}
+
+function eliminarGastoSupabase(id) {
+  const negocio = bd.configuracion.nombreNegocio;
+  if (!negocio) return;
+
+  fetch(`${SUPABASE_URL}/rest/v1/gastos?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: {
+      'apikey':        SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`
+    }
+  }).catch(error => console.error('No se pudo eliminar el gasto en Supabase:', error));
+}
+
+// Pinta el historial de turnos cerrados, agrupado por día (acordeón),
+// y debajo la sección de gastos sueltos (cargados sin turno abierto)
 function renderizarHistorialCajas() {
   const contenedor = document.getElementById('lista-historial-cajas');
   if (!contenedor) return;
 
   const turnos = bd.historialCajas || [];
 
+  // Agrupamos los turnos cerrados por día de cierre
+  const grupos    = {};
+  const ordenDias = [];
+  turnos.forEach(t => {
+    const clave = new Date(t.fechaCierre).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: '2-digit' });
+    if (!grupos[clave]) { grupos[clave] = []; ordenDias.push(clave); }
+    grupos[clave].push(t);
+  });
+
+  let html = '';
+
   if (turnos.length === 0) {
-    contenedor.innerHTML = '<div class="estado-vacio">Todavía no cerraste ningún turno de caja</div>';
-    return;
+    html += '<div class="estado-vacio">Todavía no cerraste ningún turno de caja</div>';
+  } else {
+    html += ordenDias.map((dia, idx) => {
+      const turnosDia = grupos[dia];
+      const detalle = turnosDia.map(t => {
+        const desde = formatearFecha(t.fechaApertura);
+        const hasta = formatearFecha(t.fechaCierre);
+        const cantidadGastos = (t.gastos || []).length;
+
+        return `
+          <p class="turno-info">Turno del ${desde} al ${hasta}</p>
+
+          <div class="bloque-cierre-caja">
+            <div class="bloque-cierre-caja-titulo">Efectivo</div>
+            <div class="fila-cierre-caja"><span>Inicio</span><span>${formatearMonto(t.efectivoInicio)}</span></div>
+            <div class="fila-cierre-caja"><span>Ventas</span><span class="monto-positivo">+${formatearMonto(t.efectivoVentas)}</span></div>
+            <div class="fila-cierre-caja"><span>Gastos</span><span class="monto-negativo">-${formatearMonto(t.efectivoGastos)}</span></div>
+            <div class="fila-cierre-caja destacada"><span>Total en caja</span><span>${formatearMonto(t.efectivoTotal)}</span></div>
+          </div>
+
+          <div class="bloque-cierre-caja">
+            <div class="bloque-cierre-caja-titulo">Transferencia</div>
+            <div class="fila-cierre-caja"><span>Inicio</span><span>${formatearMonto(t.transferenciaInicio)}</span></div>
+            <div class="fila-cierre-caja"><span>Ventas</span><span class="monto-positivo">+${formatearMonto(t.transferenciaVentas)}</span></div>
+            <div class="fila-cierre-caja"><span>Gastos</span><span class="monto-negativo">-${formatearMonto(t.transferenciaGastos)}</span></div>
+            <div class="fila-cierre-caja destacada"><span>Total en cuenta</span><span>${formatearMonto(t.transferenciaTotal)}</span></div>
+          </div>
+
+          ${cantidadGastos > 0 ? `<p class="turno-info" style="margin:10px 0 0">${cantidadGastos} gasto${cantidadGastos !== 1 ? 's' : ''} registrado${cantidadGastos !== 1 ? 's' : ''} en este turno</p>` : ''}
+        `;
+      }).join('<div style="height:14px"></div>');
+
+      return `
+        <div class="card-caja dia-historial">
+          <div class="dia-historial-header" onclick="toggleDiaHistorial(${idx})">
+            <div>
+              <div class="dia-historial-fecha">${dia}</div>
+              <div class="dia-historial-cantidad">${turnosDia.length} turno${turnosDia.length !== 1 ? 's' : ''} cerrado${turnosDia.length !== 1 ? 's' : ''}</div>
+            </div>
+            <span class="dia-historial-chevron" id="chevron-dia-${idx}">▾</span>
+          </div>
+          <div class="dia-historial-cuerpo" id="cuerpo-dia-${idx}">
+            <div style="padding:0 20px 20px">${detalle}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
-  contenedor.innerHTML = turnos.map(t => {
-    const desde = formatearFecha(t.fechaApertura);
-    const hasta = formatearFecha(t.fechaCierre);
-    const cantidadGastos = (t.gastos || []).length;
-
-    return `
-      <div class="card-caja" style="margin-bottom:14px">
-        <p class="turno-info" style="margin-bottom:14px">Turno del ${desde} al ${hasta}</p>
-
-        <div class="bloque-cierre-caja">
-          <div class="bloque-cierre-caja-titulo">Efectivo</div>
-          <div class="fila-cierre-caja"><span>Inicio</span><span>${formatearMonto(t.efectivoInicio)}</span></div>
-          <div class="fila-cierre-caja"><span>Ventas</span><span class="monto-positivo">+${formatearMonto(t.efectivoVentas)}</span></div>
-          <div class="fila-cierre-caja"><span>Gastos</span><span class="monto-negativo">-${formatearMonto(t.efectivoGastos)}</span></div>
-          <div class="fila-cierre-caja destacada"><span>Total en caja</span><span>${formatearMonto(t.efectivoTotal)}</span></div>
-        </div>
-
-        <div class="bloque-cierre-caja" style="margin-bottom:0">
-          <div class="bloque-cierre-caja-titulo">Transferencia</div>
-          <div class="fila-cierre-caja"><span>Inicio</span><span>${formatearMonto(t.transferenciaInicio)}</span></div>
-          <div class="fila-cierre-caja"><span>Ventas</span><span class="monto-positivo">+${formatearMonto(t.transferenciaVentas)}</span></div>
-          <div class="fila-cierre-caja"><span>Gastos</span><span class="monto-negativo">-${formatearMonto(t.transferenciaGastos)}</span></div>
-          <div class="fila-cierre-caja destacada"><span>Total en cuenta</span><span>${formatearMonto(t.transferenciaTotal)}</span></div>
-        </div>
-
-        ${cantidadGastos > 0 ? `<p class="turno-info" style="margin:10px 0 0">${cantidadGastos} gasto${cantidadGastos !== 1 ? 's' : ''} registrado${cantidadGastos !== 1 ? 's' : ''} en este turno</p>` : ''}
+  // Sección aparte: gastos cargados sin turno abierto
+  const sueltos = bd.gastosSueltos || [];
+  html += `
+    <div style="margin-top:22px">
+      <p style="font-size:13px;font-weight:500;color:var(--texto-secundario);margin:0 0 8px 2px">Gastos sueltos</p>
+      <div class="card-caja">
+        <p class="turno-info" style="margin-bottom:${sueltos.length ? '10px' : '0'}">Cargados con el negocio cerrado, sin turno abierto</p>
+        ${sueltos.length === 0
+          ? '<div class="estado-vacio" style="padding:8px 0">No hay gastos sueltos registrados</div>'
+          : sueltos.map(g => `
+            <div class="fila-cierre-caja" style="padding:8px 0;border-bottom:0.5px solid var(--borde-claro)">
+              <span>${g.concepto} <span style="color:var(--texto-secundario)">(${g.medio === 'efectivo' ? 'Efectivo' : 'Transferencia'})</span><br><span style="color:#aaa;font-size:11px">${formatearFecha(g.fecha)}</span></span>
+              <span style="display:flex;align-items:center;gap:8px">
+                <span class="monto-negativo">-${formatearMonto(g.monto)}</span>
+                <span style="cursor:pointer;color:var(--rojo)" onclick="eliminarGasto(${g.id})">✕</span>
+              </span>
+            </div>
+          `).join('')
+        }
       </div>
-    `;
-  }).join('');
+    </div>
+  `;
+
+  contenedor.innerHTML = html;
 }
+
+// Abre/cierra el desplegable de un día dentro del historial de cajas
+function toggleDiaHistorial(idx) {
+  const cuerpo  = document.getElementById('cuerpo-dia-' + idx);
+  const chevron = document.getElementById('chevron-dia-' + idx);
+  const abierto = cuerpo.classList.contains('abierto');
+
+  document.querySelectorAll('.dia-historial-cuerpo.abierto').forEach(c => c.classList.remove('abierto'));
+  document.querySelectorAll('.dia-historial-chevron').forEach(c => c.style.transform = 'rotate(0deg)');
+
+  if (!abierto) {
+    cuerpo.classList.add('abierto');
+    chevron.style.transform = 'rotate(180deg)';
+  }
+}
+
+/* ================================================
+   BALANCE MENSUAL (Total vendido - Gastos totales)
+   ================================================ */
+
+// Junta los gastos de las 3 fuentes posibles (turno abierto, turnos ya
+// cerrados y gastos sueltos) filtrando por el mes/año que se pida
+function calcularGastosDelMes(mes, anio) {
+  let total = 0;
+
+  const estaEnElMes = (fechaISO) => {
+    const f = new Date(fechaISO);
+    return f.getMonth() === mes && f.getFullYear() === anio;
+  };
+
+  if (bd.turnoCaja) {
+    total += bd.turnoCaja.gastos.filter(g => estaEnElMes(g.fecha)).reduce((s, g) => s + g.monto, 0);
+  }
+  bd.historialCajas.forEach(t => {
+    total += (t.gastos || []).filter(g => estaEnElMes(g.fecha)).reduce((s, g) => s + g.monto, 0);
+  });
+  total += bd.gastosSueltos.filter(g => estaEnElMes(g.fecha)).reduce((s, g) => s + g.monto, 0);
+
+  return total;
+}
+
+// Ventas en efectivo/transferencia + cobros de fiado del mes/año pedido
+function calcularVendidoDelMes(mes, anio) {
+  const estaEnElMes = (fechaISO) => {
+    const f = new Date(fechaISO);
+    return f.getMonth() === mes && f.getFullYear() === anio;
+  };
+
+  const ventas = bd.ventas
+    .filter(v => (v.pago === 'efectivo' || v.pago === 'transferencia') && estaEnElMes(v.fecha))
+    .reduce((s, v) => s + v.total, 0);
+
+  let cobrosFiado = 0;
+  Object.values(bd.fiado).forEach(cuenta => {
+    cuenta.movimientos.forEach(m => {
+      if (m.tipo === 'pago' && estaEnElMes(m.fecha)) cobrosFiado += m.monto;
+    });
+  });
+
+  return ventas + cobrosFiado;
+}
+
+// Pinta la tarjeta de "Balance" del home con el resultado del mes actual
+function renderizarCardBalance() {
+  const card = document.getElementById('card-balance-monto');
+  if (!card) return;
+
+  const ahora     = new Date();
+  const vendido   = calcularVendidoDelMes(ahora.getMonth(), ahora.getFullYear());
+  const gastos    = calcularGastosDelMes(ahora.getMonth(), ahora.getFullYear());
+  const resultado = vendido - gastos;
+
+  card.textContent  = (resultado >= 0 ? '+' : '') + formatearMonto(resultado);
+  card.style.color  = resultado >= 0 ? 'var(--verde-oscuro)' : 'var(--rojo)';
+
+  const mesEl = document.getElementById('card-balance-mes');
+  if (mesEl) {
+    mesEl.textContent = ahora.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
+  }
+}
+
+function abrirBalance() {
+  pushEstado('form');
+
+  const ahora     = new Date();
+  const mes       = ahora.getMonth();
+  const anio      = ahora.getFullYear();
+  const vendido   = calcularVendidoDelMes(mes, anio);
+  const gastos    = calcularGastosDelMes(mes, anio);
+  const resultado = vendido - gastos;
+
+  document.getElementById('balance-mes-titulo').textContent =
+    ahora.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
+
+  document.getElementById('balance-vendido').textContent = '+' + formatearMonto(vendido);
+  document.getElementById('balance-gastos').textContent  = '-' + formatearMonto(gastos);
+
+  const resultadoEl = document.getElementById('balance-resultado');
+  resultadoEl.textContent  = (resultado >= 0 ? '+' : '') + formatearMonto(resultado);
+  resultadoEl.style.color  = resultado >= 0 ? 'var(--verde-oscuro)' : 'var(--rojo)';
+
+  document.getElementById('form-balance').classList.add('abierto');
+  document.querySelector('.bottom-nav').style.display = 'none';
+}
+
+function cerrarBalance() {
+  document.getElementById('form-balance').classList.remove('abierto');
+  document.querySelector('.bottom-nav').style.display = 'flex';
+}
+
 
 /* ================================================
    PANTALLA: AJUSTES
@@ -2883,6 +3156,7 @@ function inicializar() {
 
   renderizarCarrito();
   cargarResumenes('hoy');
+  renderizarCardBalance();
 
   document.getElementById('app').style.display = 'none';
   setTimeout(verificarLicenciaV3, 1000);

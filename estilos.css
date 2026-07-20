@@ -1939,8 +1939,82 @@ body.escaneando .app {
 #form-gasto .formulario-titulo,
 #form-gasto .btn-volver,
 #form-cierre-caja .formulario-titulo,
-#form-cierre-caja .btn-volver {
+#form-cierre-caja .btn-volver,
+#form-balance .formulario-titulo,
+#form-balance .btn-volver {
   color: #1a1a1a;
+}
+
+#form-balance .formulario-header {
+  background: #e8f8ee;
+}
+
+/* Tarjeta "Balance" del home, debajo de Apertura/Gastos/Cierre */
+.card-balance {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--fondo-secundario);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.card-balance-titulo {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.card-balance-mes {
+  font-size: 11px;
+  color: var(--texto-secundario);
+}
+
+.card-balance-monto {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Acordeón por día dentro de Historial de cajas */
+.dia-historial { padding: 0; overflow: hidden; }
+
+.dia-historial-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  cursor: pointer;
+}
+
+.dia-historial-fecha {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.dia-historial-cantidad {
+  font-size: 11px;
+  color: var(--texto-secundario);
+  margin-top: 2px;
+}
+
+.dia-historial-chevron {
+  font-size: 16px;
+  color: var(--texto-secundario);
+  transition: transform 0.2s ease;
+  display: inline-block;
+}
+
+.dia-historial-cuerpo {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+}
+
+.dia-historial-cuerpo.abierto {
+  max-height: 2000px;
 }
 
 /* ------------------------------------------------

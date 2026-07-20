@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-title" content="VendoMas">
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="estilos.css?v=5">
+  <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
 
@@ -173,6 +173,20 @@
         <span>Cierre de caja</span>
       </button>
     </div>
+
+    <div class="card-balance" onclick="abrirBalance()">
+      <div style="display:flex;align-items:center;gap:10px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+        <div>
+          <div class="card-balance-titulo">Balance</div>
+          <div class="card-balance-mes" id="card-balance-mes"></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="card-balance-monto" id="card-balance-monto">$0</span>
+        <span style="color:#aaa;font-size:16px">›</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -302,6 +316,8 @@
           <span class="card-caja-titulo">Nuevo gasto</span>
         </div>
 
+        <p id="gasto-nota-turno" style="display:none;font-size:12px;color:#a8720a;background:#fff6e5;border-radius:8px;padding:8px 10px;margin-bottom:16px"></p>
+
         <label class="etiqueta-campo">Concepto</label>
         <input class="input-campo" type="text" id="gasto-concepto" placeholder="Ej: Pago proveedor de bebidas" maxlength="60"/>
 
@@ -357,6 +373,29 @@
         </div>
 
         <button class="btn-primario ancho-completo" onclick="confirmarCierreCaja()">Confirmar cierre</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================
+       OVERLAY: BALANCE MENSUAL
+       ================================================ -->
+  <div class="formulario-overlay" id="form-balance">
+    <div class="formulario-header">
+      <span class="btn-volver" onclick="cerrarBalance()">←</span>
+      <span class="formulario-titulo">Balance</span>
+    </div>
+    <div class="formulario-cuerpo">
+      <div class="card-caja">
+        <p class="turno-info" id="balance-mes-titulo" style="font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:16px">—</p>
+
+        <div class="bloque-cierre-caja">
+          <div class="fila-cierre-caja"><span>Total vendido</span><span class="monto-positivo" id="balance-vendido">+$0</span></div>
+          <div class="fila-cierre-caja"><span>Gastos totales</span><span class="monto-negativo" id="balance-gastos">-$0</span></div>
+          <div class="fila-cierre-caja destacada"><span>Resultado</span><span id="balance-resultado">$0</span></div>
+        </div>
+
+        <p style="font-size:11px;color:#aaa;margin-top:14px">Incluye ventas en efectivo/transferencia y cobros de fiado del mes. Se descuentan los gastos de todas las cajas del mes más los gastos sueltos.</p>
       </div>
     </div>
   </div>
@@ -1005,7 +1044,7 @@
   }
 </script>
 
-<script src="script.js?v=4"></script>
+<script src="script.js"></script>
 
 <!-- PWA: registramos el Service Worker (solo en modo navegador, no en la app nativa) -->
 <script>
