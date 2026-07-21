@@ -1967,14 +1967,34 @@ body.escaneando .app {
   color: var(--texto);
 }
 
-.card-balance-mes {
-  font-size: 11px;
-  color: var(--texto-secundario);
+.balance-anio-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--fondo-secundario);
+  border-radius: 14px;
+  padding: 12px 24px;
+  margin-bottom: 14px;
 }
 
-.card-balance-monto {
-  font-size: 14px;
+.balance-anio-numero {
+  font-size: 17px;
   font-weight: 600;
+  color: var(--texto);
+}
+
+.balance-anio-flecha {
+  font-size: 20px;
+  color: var(--texto);
+  cursor: pointer;
+  padding: 0 10px;
+  user-select: none;
+}
+
+.balance-anio-flecha.deshabilitado {
+  color: var(--borde);
+  cursor: default;
+  pointer-events: none;
 }
 
 /* Acordeón por día dentro de Historial de cajas */

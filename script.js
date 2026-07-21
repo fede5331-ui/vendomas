@@ -2906,45 +2906,32 @@ function calcularVendidoDelMes(mes, anio) {
   return ventas + cobrosFiado;
 }
 
-// Pinta la tarjeta de "Balance" del home con el resultado del mes actual
+// Deja los botones de Apertura/Cierre de caja con el color correcto
+// según haya o no un turno abierto (se llama cada vez que se refresca el home)
 function renderizarCardBalance() {
-  const card = document.getElementById('card-balance-monto');
-  if (!card) return;
-
-  const ahora     = new Date();
-  const vendido   = calcularVendidoDelMes(ahora.getMonth(), ahora.getFullYear());
-  const gastos    = calcularGastosDelMes(ahora.getMonth(), ahora.getFullYear());
-  const resultado = vendido - gastos;
-
-  card.textContent  = (resultado >= 0 ? '+' : '') + formatearMonto(resultado);
-  card.style.color  = resultado >= 0 ? 'var(--verde-oscuro)' : 'var(--rojo)';
-
-  const mesEl = document.getElementById('card-balance-mes');
-  if (mesEl) {
-    mesEl.textContent = ahora.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
-  }
+  actualizarEstadoBotonesCaja();
 }
+
+// "Apertura de caja" y "Cierre de caja" nunca comparten color: el que
+// está disponible para usarse en este momento queda verde, el otro gris.
+function actualizarEstadoBotonesCaja() {
+  const btnApertura = document.getElementById('btn-apertura-caja');
+  const btnCierre   = document.getElementById('btn-cierre-caja');
+  if (!btnApertura || !btnCierre) return;
+
+  btnApertura.classList.toggle('btn-inicio-neutro', hayTurnoAbierto());
+  btnCierre.classList.toggle('btn-inicio-neutro', !hayTurnoAbierto());
+}
+
+// Año que se está mostrando en la pantalla de Balance
+let anioBalanceActual = new Date().getFullYear();
+
+const NOMBRES_MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 function abrirBalance() {
   pushEstado('form');
-
-  const ahora     = new Date();
-  const mes       = ahora.getMonth();
-  const anio      = ahora.getFullYear();
-  const vendido   = calcularVendidoDelMes(mes, anio);
-  const gastos    = calcularGastosDelMes(mes, anio);
-  const resultado = vendido - gastos;
-
-  document.getElementById('balance-mes-titulo').textContent =
-    ahora.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
-
-  document.getElementById('balance-vendido').textContent = '+' + formatearMonto(vendido);
-  document.getElementById('balance-gastos').textContent  = '-' + formatearMonto(gastos);
-
-  const resultadoEl = document.getElementById('balance-resultado');
-  resultadoEl.textContent  = (resultado >= 0 ? '+' : '') + formatearMonto(resultado);
-  resultadoEl.style.color  = resultado >= 0 ? 'var(--verde-oscuro)' : 'var(--rojo)';
-
+  anioBalanceActual = new Date().getFullYear();
+  renderizarBalanceAnio();
   document.getElementById('form-balance').classList.add('abierto');
   document.querySelector('.bottom-nav').style.display = 'none';
 }
@@ -2952,6 +2939,76 @@ function abrirBalance() {
 function cerrarBalance() {
   document.getElementById('form-balance').classList.remove('abierto');
   document.querySelector('.bottom-nav').style.display = 'flex';
+}
+
+// Mueve el año que se está mostrando (-1 año atrás, +1 año adelante).
+// Nunca deja avanzar más allá del año actual.
+function cambiarAnioBalance(delta) {
+  const anioMaximo = new Date().getFullYear();
+  const nuevoAnio  = anioBalanceActual + delta;
+  if (nuevoAnio > anioMaximo) return;
+  anioBalanceActual = nuevoAnio;
+  renderizarBalanceAnio();
+}
+
+// Pinta el navegador de año y el acordeón de los 12 meses de ese año
+function renderizarBalanceAnio() {
+  document.getElementById('balance-anio-actual').textContent = anioBalanceActual;
+
+  const anioMaximo = new Date().getFullYear();
+  document.getElementById('balance-anio-siguiente').classList.toggle('deshabilitado', anioBalanceActual >= anioMaximo);
+
+  const ahora      = new Date();
+  const mesActual  = (anioBalanceActual === ahora.getFullYear()) ? ahora.getMonth() : -1;
+
+  const contenedor = document.getElementById('lista-balance-meses');
+  contenedor.innerHTML = NOMBRES_MESES.map((nombreMes, idx) => {
+    const vendido   = calcularVendidoDelMes(idx, anioBalanceActual);
+    const gastos    = calcularGastosDelMes(idx, anioBalanceActual);
+    const resultado = vendido - gastos;
+    const colorResultado = resultado >= 0 ? 'var(--verde-oscuro)' : 'var(--rojo)';
+
+    return `
+      <div class="card-caja dia-historial">
+        <div class="dia-historial-header" onclick="toggleMesBalance(${idx})">
+          <div class="dia-historial-fecha" style="font-size:14px">${nombreMes}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:13px;font-weight:600;color:${colorResultado}">${resultado >= 0 ? '+' : ''}${formatearMonto(resultado)}</span>
+            <span class="dia-historial-chevron" id="chevron-mes-${idx}">▾</span>
+          </div>
+        </div>
+        <div class="dia-historial-cuerpo${idx === mesActual ? ' abierto' : ''}" id="cuerpo-mes-${idx}">
+          <div style="padding:0 20px 20px">
+            <div class="bloque-cierre-caja" style="margin-bottom:0">
+              <div class="fila-cierre-caja"><span>Total vendido</span><span class="monto-positivo">+${formatearMonto(vendido)}</span></div>
+              <div class="fila-cierre-caja"><span>Gastos totales</span><span class="monto-negativo">-${formatearMonto(gastos)}</span></div>
+              <div class="fila-cierre-caja destacada"><span>Resultado</span><span style="color:${colorResultado}">${resultado >= 0 ? '+' : ''}${formatearMonto(resultado)}</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (mesActual >= 0) {
+    const chevron = document.getElementById('chevron-mes-' + mesActual);
+    if (chevron) chevron.style.transform = 'rotate(180deg)';
+  }
+}
+
+// Abre/cierra el desplegable de un mes dentro de Balance
+function toggleMesBalance(idx) {
+  const cuerpo  = document.getElementById('cuerpo-mes-' + idx);
+  const chevron = document.getElementById('chevron-mes-' + idx);
+  const abierto = cuerpo.classList.contains('abierto');
+
+  document.querySelectorAll('#lista-balance-meses .dia-historial-cuerpo.abierto').forEach(c => c.classList.remove('abierto'));
+  document.querySelectorAll('#lista-balance-meses .dia-historial-chevron').forEach(c => c.style.transform = 'rotate(0deg)');
+
+  if (!abierto) {
+    cuerpo.classList.add('abierto');
+    chevron.style.transform = 'rotate(180deg)';
+  }
 }
 
 

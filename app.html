@@ -177,15 +177,9 @@
     <div class="card-balance" onclick="abrirBalance()">
       <div style="display:flex;align-items:center;gap:10px">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
-        <div>
-          <div class="card-balance-titulo">Balance</div>
-          <div class="card-balance-mes" id="card-balance-mes"></div>
-        </div>
+        <span class="card-balance-titulo">Balance</span>
       </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span class="card-balance-monto" id="card-balance-monto">$0</span>
-        <span style="color:#aaa;font-size:16px">›</span>
-      </div>
+      <span style="color:#aaa;font-size:16px">›</span>
     </div>
   </div>
 </div>
@@ -386,17 +380,15 @@
       <span class="formulario-titulo">Balance</span>
     </div>
     <div class="formulario-cuerpo">
-      <div class="card-caja">
-        <p class="turno-info" id="balance-mes-titulo" style="font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:16px">—</p>
-
-        <div class="bloque-cierre-caja">
-          <div class="fila-cierre-caja"><span>Total vendido</span><span class="monto-positivo" id="balance-vendido">+$0</span></div>
-          <div class="fila-cierre-caja"><span>Gastos totales</span><span class="monto-negativo" id="balance-gastos">-$0</span></div>
-          <div class="fila-cierre-caja destacada"><span>Resultado</span><span id="balance-resultado">$0</span></div>
-        </div>
-
-        <p style="font-size:11px;color:#aaa;margin-top:14px">Incluye ventas en efectivo/transferencia y cobros de fiado del mes. Se descuentan los gastos de todas las cajas del mes más los gastos sueltos.</p>
+      <div class="balance-anio-nav">
+        <span class="balance-anio-flecha" onclick="cambiarAnioBalance(-1)">‹</span>
+        <span class="balance-anio-numero" id="balance-anio-actual">2026</span>
+        <span class="balance-anio-flecha" id="balance-anio-siguiente" onclick="cambiarAnioBalance(1)">›</span>
       </div>
+
+      <div id="lista-balance-meses"></div>
+
+      <p style="font-size:11px;color:#aaa;margin-top:14px">Incluye ventas en efectivo/transferencia y cobros de fiado. Se descuentan los gastos de todas las cajas del mes más los gastos sueltos.</p>
     </div>
   </div>
 
